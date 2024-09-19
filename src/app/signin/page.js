@@ -1,68 +1,46 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 import Script from 'next/script';
 
 export default function SignIn() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  // Callback function to handle Google credential response
+  const handleCredentialResponse = (response) => {
+    const decodedJWT = JSON.parse(atob(response.credential.split('.')[1]));
+    const email = decodedJWT.email;
 
-  const loadGoogleAPI = () => {
-    if (window.gapi) {
-      window.gapi.load('auth2', () => {
-        const auth2 = window.gapi.auth2.init({
-          client_id: '273708013662-57dmf79tbujlodlh3m93oo16i4n6pho1.apps.googleusercontent.com',
-          scope: 'profile email',
-          hosted_domain: 'vitstudent.ac.in',
-        });
-
-        auth2.attachClickHandler(document.getElementById('googleSignInBtn'), {},
-          (googleUser) => {
-            const profile = googleUser.getBasicProfile();
-            const email = profile.getEmail();
-
-            if (email.endsWith('@vitstudent.ac.in')) {
-              setLoading(true); // Show loading spinner during redirection
-              router.push('/');  // Redirect to the portal (home page)
-            } else {
-              alert('Only VIT student emails are allowed.');
-              auth2.signOut();
-            }
-          }, (error) => {
-            console.log('Error during sign-in:', error);
-          }
-        );
-      });
+    if (email.endsWith('@vitstudent.ac.in')) {
+      console.log("Signed in successfully with: " + email);
+      // Handle successful login, e.g., redirect or set session
     } else {
-      console.error('Google API not loaded.');
+      alert("Only VIT student emails are allowed.");
     }
   };
-
-  useEffect(() => {
-    if (window.gapi) {
-      loadGoogleAPI();
-    }
-  }, [router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100">
       <div className="p-6 rounded-lg shadow-lg bg-white max-w-sm w-full text-center">
         <h1 className="text-xl font-semibold mb-4">Codex Cryptum</h1>
-        <div
-          id="googleSignInBtn"
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-blue-600 transition-all cursor-pointer"
-        >
-          {loading ? "Redirecting..." : "Login with Google"}
-        </div>
+        <div id="googleSignInBtn"></div>
       </div>
+
+      {/* Load the Google Identity Services (GIS) script dynamically */}
       <Script
-        src="https://apis.google.com/js/platform.js"
+        src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
         onLoad={() => {
-          if (window.gapi) {
-            loadGoogleAPI();
-          }
+          // Initialize Google Identity Services after the script loads
+          window.google.accounts.id.initialize({
+            client_id: "273708013662-57dmf79tbujlodlh3m93oo16i4n6pho1.apps.googleusercontent.com",
+            callback: handleCredentialResponse,
+            hosted_domain: 'vitstudent.ac.in',
+          });
+
+          // Render the sign-in button after initialization
+          window.google.accounts.id.renderButton(
+            document.getElementById("googleSignInBtn"),
+            { theme: "outline", size: "large" }  // Customize the button appearance
+          );
         }}
       />
     </div>
