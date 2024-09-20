@@ -19,6 +19,7 @@ export default function Leaderboard({ leaderboard }: { leaderboard: LeaderboardE
       </CardHeader>
       <CardContent>
         <div className="overflow-y-auto max-h-[350px]">
+          {/* Ensure Table, TableHeader, etc., can accept className */}
           <Table className="min-w-full divide-y divide-green-500 border-collapse bg-black">
             <TableHeader className="bg-black">
               <TableRow>
