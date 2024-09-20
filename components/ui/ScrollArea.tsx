@@ -13,7 +13,7 @@ const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(
       <div
         ref={ref}
         className={cn(
-          'overflow-y-auto max-h-[300px] p-4', // Adjust height or any other styles accordingly
+          'overflow-y-auto max-h-[500px] p-4', // Adjust height or any other styles accordingly
           className
         )}
         {...props}

@@ -10,25 +10,33 @@ interface LeaderboardEntry {
   points: number;
 }
 
+// Helper function to get first name
+const getFirstName = (fullName: string) => {
+  return fullName.split(' ')[0]; // Splits by space and takes the first element
+};
+
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
   useEffect(() => {
     const eventSource = new EventSource('/api/sse-leaderboard');
-
+    
     eventSource.onmessage = (e) => {
       const data = JSON.parse(e.data);
-      setLeaderboard(data);
+      // Check if the data is an array before setting the leaderboard
+      if (Array.isArray(data)) {
+        setLeaderboard(data);
+      }
     };
-
+  
     eventSource.onerror = () => {
       eventSource.close();
     };
-
+  
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, []);  
 
   return (
     <Card className="bg-black border-green-500 flex-grow backdrop-blur-sm bg-opacity-30">
@@ -43,7 +51,7 @@ export default function Leaderboard() {
             <TableHeader className="bg-black">
               <TableRow>
                 <TableHead className="text-green-500 text-xl font-mono border border-green-500 bg-black">Rank</TableHead>
-                <TableHead className="text-green-500 text-xl font-mono border border-green-500 bg-black">Hacker</TableHead>
+                <TableHead className="text-green-500 text-xl font-mono border border-green-500 bg-black">Name</TableHead>
                 <TableHead className="text-green-500 text-xl font-mono border border-green-500 bg-black">Score</TableHead>
               </TableRow>
             </TableHeader>
@@ -54,7 +62,7 @@ export default function Leaderboard() {
                     {index + 1}
                   </TableCell>
                   <TableCell className="font-mono text-green-500 text-lg border border-green-500 bg-black">
-                    {player.user_name}
+                    {getFirstName(player.user_name)} {/* Display only the first name */}
                   </TableCell>
                   <TableCell className="font-mono text-green-500 text-lg border border-green-500 bg-black">
                     {player.points}

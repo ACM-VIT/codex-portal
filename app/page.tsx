@@ -1,13 +1,14 @@
 'use client'; // Ensure this is treated as a client component
 
 import { useState, useEffect } from 'react';
-import Challenge from '../components/Challenge';
+import ChallengeTerminal from '../components/ChallengeTerminal';
 import Leaderboard from '../components/Leaderboard';
 import { useSession, signIn } from 'next-auth/react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import useSWR from 'swr';
 import { fetcher } from '../lib/fetcher';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select';
 
 interface LeaderboardEntry {
   user_name: string;
@@ -42,12 +43,10 @@ export default function Home() {
       return;
     }
     if (!session) {
-      // User is not authenticated, redirect to sign-in page
-      signIn(); // This will redirect to the sign-in page
+      signIn();
     }
   }, [session, status]);
 
-  // Handle Challenge Completion
   const handleChallengeCompletion = (questionId: string) => {
     mutateQuestions(
       (questions) =>
@@ -66,49 +65,46 @@ export default function Home() {
 
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-black text-green-500">
-      {/* Sidebar for challenges */}
+      {/* Leaderboard on the left */}
       <div className="w-full lg:w-1/4 flex flex-col border-r border-green-500 p-4 overflow-y-auto">
-        <h2 className="text-2xl md:text-3xl mb-4">Select your challenge:</h2>
-        <div className="flex flex-col gap-2">
-          {questions.map((q: Question) => (
-            <button
-              key={q.id}
-              onClick={() => setSelectedQuestion(q)}
-              className={`bg-black border border-green-500 p-2 text-left text-lg transition ${
-                q.completed ? 'bg-green-500 text-black' : 'hover:bg-green-700 hover:text-black'
-              }`}
-              aria-pressed={q.completed}
-            >
-              {q.name} {q.completed && '✓'}
-            </button>
-          ))}
-        </div>
+        <Leaderboard />
       </div>
 
-      {/* Main content area */}
-      <div className="w-full lg:w-1/2 p-4 flex flex-col border-x border-green-500">
+      {/* Main content area - Center area with challenge */}
+      <div className="w-full lg:w-3/4 p-4 flex flex-col">
+        <h2 className="text-2xl md:text-3xl mb-4">Select your challenge:</h2>
+
+        {/* Dropdown for question selection */}
+        <Select
+          onValueChange={(value) =>
+            setSelectedQuestion(questions.find((q) => q.id === value) || null)
+          }
+        >
+          <SelectTrigger className="bg-black border border-green-500 p-2 text-lg text-green-500">
+            <SelectValue placeholder="Choose a challenge" />
+          </SelectTrigger>
+          <SelectContent>
+            {questions.map((q) => (
+              <SelectItem key={q.id} value={q.id}>
+                {q.name} {q.completed ? '✓' : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Render the challenge terminal */}
         {selectedQuestion ? (
-          <div className="bg-black border border-green-500 p-6 rounded-md flex flex-col h-full">
-            <div className="text-2xl md:text-3xl mb-4">Mission: {selectedQuestion.name}</div>
-            <div className="mb-2 text-lg md:text-xl">
-              Difficulty: <span className="text-yellow-500 font-semibold">{selectedQuestion.difficulty}</span>
-            </div>
-            <div className="mb-4 overflow-y-auto max-h-32 sm:max-h-40 md:max-h-48 lg:max-h-56 xl:max-h-64 pr-2">
-              <p className="text-base sm:text-lg">{selectedQuestion.description}</p>
-            </div>
-            <div className="flex-grow"></div>
-            <Challenge question={selectedQuestion} onComplete={handleChallengeCompletion} />
-          </div>
+          <ChallengeTerminal
+            question={selectedQuestion}
+            questions={questions}
+            onComplete={handleChallengeCompletion}
+            userName={session?.user?.name?.split(' ')[0] || 'Hacker'} // Passing first name of the user
+          />
         ) : (
           <div className="bg-black border border-green-500 p-4 rounded-md h-full flex items-center justify-center">
             <p className="text-4xl sm:text-3xl text-center">Select a challenge to begin hacking.</p>
           </div>
         )}
-      </div>
-
-      {/* Leaderboard on the right */}
-      <div className="w-full lg:w-1/4 p-4 flex flex-col">
-        <Leaderboard />
       </div>
 
       <ToastContainer
@@ -120,7 +116,7 @@ export default function Home() {
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        toastStyle={{ backgroundColor: 'black', color: 'green' }} // Customize the toast background
+        toastStyle={{ backgroundColor: 'black', color: 'green' }}
       />
     </div>
   );
