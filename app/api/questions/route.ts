@@ -5,6 +5,7 @@ import { getToken } from 'next-auth/jwt';
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
+  // Use req.cookies for the getToken function
   const token = await getToken({ req });
 
   if (!token) {
