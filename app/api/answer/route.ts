@@ -17,7 +17,10 @@ export async function POST(req: NextRequest) {
       );
 
       // Award points if the answer is correct
-      await pool.query('UPDATE leaderboard SET points = points + 10 WHERE user_name = $1', [userName]);
+      await pool.query(
+        'INSERT INTO leaderboard (user_name, points) VALUES ($1, $2) ON CONFLICT (user_name) DO UPDATE SET points = leaderboard.points + $2',
+        [userName, 10]
+      );
 
       return NextResponse.json({ message: 'Correct answer', completed: true });
     } else {

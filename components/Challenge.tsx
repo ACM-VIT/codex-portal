@@ -1,5 +1,3 @@
-// components/Challenge.tsx
-
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
@@ -89,7 +87,7 @@ export default function Challenge({ question, onComplete, userName }: ChallengeP
   };
 
   return (
-    <Card className="w-full bg-black text-green-500 font-mono border-none">
+    <Card className="w-full bg-black text-green-500 font-mono border-none outline outline-2 outline-green-500">
       <CardContent className="p-6 flex flex-col h-full">
         {/* Terminal Area */}
         <ScrollArea className="flex-grow mb-4 rounded h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80" ref={scrollAreaRef}>

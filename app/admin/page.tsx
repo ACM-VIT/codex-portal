@@ -1,5 +1,3 @@
-// app/admin/page.tsx
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,21 +7,12 @@ import { Label } from '../../components/ui/Label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { Moon, Sun, Minus } from 'lucide-react';
-import Spinner from '../../components/Spinner'; 
 
 interface Question {
   id: string;
   name: string;
   difficulty: string;
   answer: string;
-}
-
-interface UserStatus {
-  user_id: string;
-  username: string;
-  total_challenges: number;
-  completed_challenges: number;
-  completion_percentage: number;
 }
 
 export default function AdminPage() {
@@ -37,11 +26,6 @@ export default function AdminPage() {
   const [answer, setAnswer] = useState(''); // New field for the answer
   const [responseMessage, setResponseMessage] = useState('');
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
-
-  // State for Active Users
-  const [activeUsers, setActiveUsers] = useState<UserStatus[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState<boolean>(false);
-  const [usersError, setUsersError] = useState<string>('');
 
   // Fetch active questions from the backend
   useEffect(() => {
@@ -62,37 +46,6 @@ export default function AdminPage() {
     };
 
     fetchActiveQuestions();
-  }, []);
-
-  // Fetch active users from the backend
-  useEffect(() => {
-    const fetchActiveUsers = async () => {
-      setIsLoadingUsers(true);
-      try {
-        const res = await fetch('/api/admin/users', {
-          method: 'GET',
-        });
-        if (res.ok) {
-          const data: UserStatus[] = await res.json();
-          setActiveUsers(data);
-        } else {
-          const errorData = await res.json();
-          throw new Error(errorData.error || 'Failed to fetch active users');
-        }
-      } catch (error: any) {
-        console.error('Error fetching active users:', error);
-        setUsersError(error.message);
-      } finally {
-        setIsLoadingUsers(false);
-      }
-    };
-
-    fetchActiveUsers();
-
-    // Optional: Implement polling every 30 seconds for real-time updates
-    const intervalId = setInterval(fetchActiveUsers, 30000);
-
-    return () => clearInterval(intervalId);
   }, []);
 
   // Dark mode effect
@@ -286,52 +239,6 @@ export default function AdminPage() {
                 </li>
               ))}
             </ul>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Active Users Card */}
-      <div className="mt-8">
-        <Card className="w-full">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">Active Users</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingUsers ? (
-              <Spinner size="h-8 w-8" color="border-green-500" /> // Using the Spinner component
-            ) : usersError ? (
-              <p className="text-red-500">Error: {usersError}</p>
-            ) : activeUsers.length === 0 ? (
-              <p>No users are currently active.</p>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full table-auto">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 border-b">Username</th>
-                      <th className="px-4 py-2 border-b">Completed Challenges</th>
-                      <th className="px-4 py-2 border-b">Total Challenges</th>
-                      <th className="px-4 py-2 border-b">Completion %</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {activeUsers.map((user, index) => (
-                      <tr
-                        key={user.user_id}
-                        className={`text-center ${
-                          index % 2 === 0 ? 'bg-gray-100 dark:bg-gray-800' : 'bg-white dark:bg-gray-700'
-                        } hover:bg-gray-200 dark:hover:bg-gray-600`}
-                      >
-                        <td className="border px-4 py-2">{user.username}</td>
-                        <td className="border px-4 py-2">{user.completed_challenges}</td>
-                        <td className="border px-4 py-2">{user.total_challenges}</td>
-                        <td className="border px-4 py-2">{user.completion_percentage}%</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
           </CardContent>
         </Card>
       </div>

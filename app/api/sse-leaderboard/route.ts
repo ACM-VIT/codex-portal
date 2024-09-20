@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   // Function to fetch and send leaderboard data
   const sendLeaderboard = async () => {
     try {
-      const res = await pool.query('SELECT user_name, points FROM leaderboard ORDER BY points DESC LIMIT 10');
+      const res = await pool.query('SELECT user_name AS nickname, points FROM leaderboard ORDER BY points DESC LIMIT 10');
       const data = res.rows;
       const payload = `data: ${JSON.stringify(data)}\n\n`;
       writer.write(payload);

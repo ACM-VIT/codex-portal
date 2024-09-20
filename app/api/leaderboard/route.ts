@@ -6,7 +6,7 @@ import pool from '../../../lib/db';
 export async function GET() {
   try {
     // Ensure you're selecting the correct fields. Adjust if necessary.
-    const result = await pool.query('SELECT user_name, points FROM leaderboard ORDER BY points DESC');
+    const result = await pool.query('SELECT user_name AS nickname, points FROM leaderboard ORDER BY points DESC');
     
     // Log the result for debugging purposes
     console.log('Leaderboard Data:', result.rows);
