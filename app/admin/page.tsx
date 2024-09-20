@@ -3,13 +3,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
-import { Label } from '../../components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/Card';
+import { Input } from '../../components/ui/Input';
+import { Label } from '../../components/ui/Label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/Select';
+import { Button } from '../../components/ui/Button';
 import { Moon, Sun, Minus } from 'lucide-react';
-import Spinner from '../../components/Spinner'; // Import the Spinner component
+import Spinner from '../../components/Spinner'; 
 
 interface Question {
   id: string;

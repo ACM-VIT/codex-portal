@@ -3,10 +3,10 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, CardContent } from './ui/card';
-import { Input } from './ui/input';
-import { Button } from './ui/button';
-import ScrollArea from './ui/scrollarea';
+import { Card, CardContent } from './ui/Card';
+import { Input } from './ui/Input';
+import { Button } from './ui/Button';
+import ScrollArea from './ui/ScrollArea';
 import { toast } from 'react-toastify';
 
 interface ChallengeProps {
