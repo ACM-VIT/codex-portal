@@ -1,4 +1,4 @@
-'use client';  // Ensure this is treated as a client component
+'use client'; // Ensure this is treated as a client component
 
 import { useState, useEffect } from 'react';
 import Challenge from '../components/Challenge';
@@ -26,11 +26,15 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
 
-  const { data: questions, error: questionsError, mutate: mutateQuestions } = useSWR<Question[]>(
-    session ? '/api/questions' : null,
+  const {
+    data: questions,
+    error: questionsError,
+    mutate: mutateQuestions,
+  } = useSWR<Question[]>(session ? '/api/questions' : null, fetcher);
+  const { data: leaderboard, error: leaderboardError } = useSWR<LeaderboardEntry[]>(
+    '/api/leaderboard',
     fetcher
   );
-  const { data: leaderboard, error: leaderboardError } = useSWR<LeaderboardEntry[]>('/api/leaderboard', fetcher);
 
   useEffect(() => {
     if (status === 'loading') {
@@ -45,10 +49,9 @@ export default function Home() {
 
   // Handle Challenge Completion
   const handleChallengeCompletion = (questionId: string) => {
-    // Update the questions data locally
     mutateQuestions(
-      (questions: Question[]) =>
-        questions.map((q) => (q.id === questionId ? { ...q, completed: true } : q)),
+      (questions) =>
+        (questions ?? []).map((q) => (q.id === questionId ? { ...q, completed: true } : q)),
       false
     );
   };

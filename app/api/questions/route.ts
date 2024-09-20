@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '../../../lib/db';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../../api/auth/[...nextauth]/route';
+import { getToken } from 'next-auth/jwt';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session) {
+  const token = await getToken({ req });
+
+  if (!token) {
     return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
   }
 
-  const userName = session.user?.name;
+  const userName = token.name;
 
   try {
     const questionsResult = await pool.query(

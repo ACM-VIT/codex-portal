@@ -26,8 +26,18 @@ export default function Challenge({ question, onComplete }: ChallengeProps) {
   const [showResult, setShowResult] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Simulate typing effect for terminal lines
+  const simulateTyping = (line: string, delay: number = 50) => {
+    let idx = 0;
+    const intervalId = setInterval(() => {
+      setTerminalLines((prev) => [...prev.slice(0, -1), prev[prev.length - 1] + line[idx]]);
+      idx++;
+      if (idx >= line.length) clearInterval(intervalId);
+    }, delay);
+  };
+
   useEffect(() => {
-    setTerminalLines([`Codex Cryptum v3.0`]);
+    setTerminalLines([`Codex Cryptum v3.0`, `Session started at ${new Date().toLocaleTimeString()}`, `$ `]);
     setUserAnswer('');
     setShowResult(false);
   }, [question.id]);
@@ -42,12 +52,13 @@ export default function Challenge({ question, onComplete }: ChallengeProps) {
     if (question.completed) return; // Prevent further submission if challenge is already completed
 
     if (!userAnswer.trim()) {
-      setTerminalLines((prev) => [...prev, `> `, 'Please enter an answer.']);
+      setTerminalLines((prev) => [...prev, `$ `, 'Please enter an answer.']);
       toast.warning('Please enter an answer.');
       return;
     }
 
-    setTerminalLines((prev) => [...prev, `> ${userAnswer}`, 'Processing...']);
+    setTerminalLines((prev) => [...prev.slice(0, -1), `$ ${userAnswer}`, 'Processing...']);
+    await simulateResponse(); // Simulate server response delay
 
     try {
       const res = await fetch('/api/answer', {
@@ -63,16 +74,16 @@ export default function Challenge({ question, onComplete }: ChallengeProps) {
 
       const data = await res.json();
       if (res.ok) {
-        setTerminalLines((prev) => [...prev, 'Access granted.']);
+        setTerminalLines((prev) => [...prev.slice(0, -1), 'Access granted.', `$ `]);
         setShowResult(true);
         onComplete(question.id); // Update completion status in parent
         toast.success('Correct answer! Challenge completed.');
       } else {
-        setTerminalLines((prev) => [...prev, 'Access denied.']);
+        setTerminalLines((prev) => [...prev.slice(0, -1), 'Access denied.', `$ `]);
         toast.error('Incorrect answer. Please try again.');
       }
     } catch (error) {
-      setTerminalLines((prev) => [...prev, 'Error processing request.']);
+      setTerminalLines((prev) => [...prev.slice(0, -1), 'Error processing request.', `$ `]);
       console.error('Error submitting answer:', error);
       toast.error('An error occurred. Please try again later.');
     }
@@ -84,6 +95,12 @@ export default function Challenge({ question, onComplete }: ChallengeProps) {
     if (e.key === 'Enter') {
       handleSubmit();
     }
+  };
+
+  const simulateResponse = () => {
+    return new Promise<void>((resolve) => {
+      setTimeout(() => resolve(), 1500); // Simulate server response delay
+    });
   };
 
   return (
