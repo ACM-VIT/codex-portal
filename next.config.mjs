@@ -4,6 +4,8 @@ const nextConfig = {
       return [
         {
           source: "/api/sse-leaderboard",
+          destination: '/', // redirect to home if accessed during build
+          permanent: false,
           headers: [
             {
               key: "Cache-Control",
