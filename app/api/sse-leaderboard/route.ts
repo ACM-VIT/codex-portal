@@ -1,12 +1,9 @@
+export const dynamic = 'force-dynamic'; // Ensure that this route is always treated as dynamic
+
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@lib/db';
 
 export async function GET(request: NextRequest) {
-  // Skip DB calls during the build phase
-  if (process.env.NEXT_PHASE === 'build') {
-    return NextResponse.json({ message: 'Skipping DB call during build phase' });
-  }
-
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
 
