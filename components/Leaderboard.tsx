@@ -1,9 +1,15 @@
-// components/Leaderboard.tsx
+import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table';
 
-import { Card, CardHeader, CardTitle, CardContent } from './ui/Card'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table'
+// Define the type for each leaderboard entry
+interface LeaderboardEntry {
+  id?: string;
+  user_name: string;
+  points: number;
+}
 
-export default function Leaderboard({ leaderboard }) {
+// Explicitly type the leaderboard prop
+export default function Leaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
   return (
     <Card className="bg-black border-green-500 flex-grow backdrop-blur-sm bg-opacity-30">
       <CardHeader>
@@ -40,5 +46,5 @@ export default function Leaderboard({ leaderboard }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
