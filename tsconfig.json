@@ -13,17 +13,14 @@
     "jsx": "preserve",
     "incremental": true,
     "baseUrl": ".",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"],
       "@lib/*": ["lib/*"],
       "@components/*": ["components/*"],
-      "@app/*": ["app/*"]
-    }
+      "@app/*": ["app/*"],
+      "@/*": ["./*"]
+}
+
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
