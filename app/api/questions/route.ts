@@ -1,6 +1,6 @@
 // api/questions/route.ts
 
-import pool from '../../../lib/db'; // Adjust the import path as per your project structure
+import pool from '../../../lib/db'; 
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-  const userName = req.headers.get('x-user-name'); // Extract userName from headers
+  const userName = req.headers.get('x-user-name'); 
 
   try {
     const questionsResult = await pool.query('SELECT * FROM questions ORDER BY id ASC');
@@ -35,12 +35,10 @@ export async function GET(req: NextRequest) {
 
     if (userName) {
       const completionsResult = await pool.query(
-        'SELECT question_id FROM user_challenge_completions WHERE user_name = $1 AND completed = true',
         [userName]
       );
       const completedQuestionIds = completionsResult.rows.map(row => row.question_id);
 
-      // Add 'completed' field to each question
       const questionsWithCompletion = questions.map(q => ({
         ...q,
         completed: completedQuestionIds.includes(q.id),
@@ -48,7 +46,6 @@ export async function GET(req: NextRequest) {
 
       return NextResponse.json(questionsWithCompletion);
     } else {
-      // If no userName provided, return questions without 'completed'
       return NextResponse.json(questions);
     }
   } catch (error) {

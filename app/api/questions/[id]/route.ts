@@ -1,12 +1,11 @@
 // app/api/questions/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '../../../../lib/db'; // Adjust the path based on your project structure
+import pool from '../../../../lib/db'; 
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   const { id } = params;
 
-  // Validate the ID (assuming it's an integer)
   if (!/^\d+$/.test(id)) {
     return NextResponse.json({ error: 'Invalid question ID.' }, { status: 400 });
   }
@@ -17,10 +16,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     try {
       await client.query('BEGIN');
 
-      // Delete dependent records in user_challenge_completions
       await client.query('DELETE FROM user_challenge_completions WHERE question_id = $1', [id]);
 
-      // Delete the question
       const res = await client.query('DELETE FROM questions WHERE id = $1 RETURNING *', [id]);
 
       if (res.rowCount === 0) {

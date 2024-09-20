@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
     start(controller) {
       addClient(controller);
 
-      // Remove the client when the connection is closed
       req.signal.addEventListener('abort', () => {
         removeClient(controller);
       });

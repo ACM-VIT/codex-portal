@@ -23,7 +23,7 @@ export default function AdminPage() {
   const [questionName, setQuestionName] = useState('');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState('Medium');
-  const [answer, setAnswer] = useState(''); // New field for the answer
+  const [answer, setAnswer] = useState(''); 
   const [responseMessage, setResponseMessage] = useState('');
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
 
@@ -53,10 +53,9 @@ export default function AdminPage() {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
-  // Admin login handler
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin123') { // Replace with secure authentication in production
+    if (password === 'admin123') { 
       setIsAuthenticated(true);
       setErrorMessage('');
     } else {
@@ -64,12 +63,10 @@ export default function AdminPage() {
     }
   };
 
-  // Toggle dark mode
   const toggleDarkMode = () => {
     setIsDarkMode((prevMode) => !prevMode);
   };
 
-  // Submit new question handler
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResponseMessage('');
@@ -82,7 +79,7 @@ export default function AdminPage() {
           questionName,
           description,
           difficulty,
-          answer, // Add the answer to the payload
+          answer, 
         }),
       });
 
@@ -91,7 +88,7 @@ export default function AdminPage() {
         setResponseMessage(`Question added: ${data.question.name}`);
         setQuestionName('');
         setDescription('');
-        setAnswer(''); // Clear the answer field
+        setAnswer(''); 
         setActiveQuestions([...activeQuestions, { id: data.question.id, name: data.question.name, difficulty, answer }]);
       } else {
         throw new Error(data.message);
@@ -101,7 +98,6 @@ export default function AdminPage() {
     }
   };
 
-  // Remove question handler
   const removeQuestion = async (id: string) => {
     try {
       const res = await fetch(`/api/questions/${id}`, {
@@ -216,7 +212,6 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        {/* Active Questions Card */}
         <Card className="flex-1">
           <CardHeader>
             <CardTitle className="text-xl font-bold">Active Questions</CardTitle>
@@ -243,7 +238,6 @@ export default function AdminPage() {
         </Card>
       </div>
 
-      {/* Dark Mode Toggle Button */}
       <Button
         variant="ghost"
         size="icon"

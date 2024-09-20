@@ -1,4 +1,45 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
-
-export default nextConfig;
+const nextConfig = {
+    async headers() {
+      return [
+        {
+          source: "/api/sse-leaderboard",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "no-store", 
+            },
+          ],
+        },
+        {
+          source: "/api/leaderboard",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "no-store",
+            },
+          ],
+        },
+        {
+          source: "/api/:path*",
+          headers: [
+            {
+              key: "Cache-Control",
+              value: "no-store", 
+            },
+          ],
+        },
+      ];
+    },
+    
+    // Other Next.js configurations can go here
+    reactStrictMode: true,
+  
+    // Enable server-side events (SSE) if necessary
+    experimental: {
+      serverComponentsExternalPackages: ["pg"], // Ensuring external packages like pg are allowed
+    },
+  };
+  
+  export default nextConfig;
+  
