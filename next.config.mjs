@@ -1,7 +1,9 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-    // Any other configuration
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
+
+export default (phase, { defaultConfig }) => {
+  return {
+    env: {
+      NEXT_PHASE: phase === PHASE_PRODUCTION_BUILD ? 'build' : 'runtime',
+    },
   };
-  
-  export default nextConfig;
-  
+};

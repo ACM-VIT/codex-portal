@@ -1,11 +1,15 @@
-export const dynamic = 'force-dynamic';
-
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@lib/db';
-  
+import { PHASE_PRODUCTION_BUILD } from 'next/constants';
+
 console.log('Database Pool:', pool);
 
 export async function GET(request: NextRequest) {
+  // Prevent DB calls during build phase
+  if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) {
+    return NextResponse.json({ message: 'Skipping DB call during build phase' });
+  }
+
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
 
