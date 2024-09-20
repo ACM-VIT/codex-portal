@@ -35,6 +35,7 @@ export async function GET(req: NextRequest) {
 
     if (userName) {
       const completionsResult = await pool.query(
+        'SELECT question_id FROM user_challenge_completions WHERE user_name = $1 AND completed = true', 
         [userName]
       );
       const completedQuestionIds = completionsResult.rows.map(row => row.question_id);
