@@ -1,22 +1,29 @@
-// api/sse/route.ts
-
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { addClient, removeClient } from '../../../lib/sse';
 
+// This function will be invoked on the GET request
 export async function GET(req: NextRequest) {
+  // Set the necessary headers for SSE
   const headers = {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
     'Connection': 'keep-alive',
   };
 
-  return new Response(new ReadableStream({
-    start(controller) {
-      addClient(controller);
+  // Create and return a new ReadableStream for the response
+  return new Response(
+    new ReadableStream({
+      start(controller) {
+        // Add the controller to manage the client's stream
+        addClient(controller);
 
-      req.signal.addEventListener('abort', () => {
-        removeClient(controller);
-      });
-    },
-  }), { headers });
+        // Listen for the 'abort' signal (if the client disconnects)
+        req.signal.addEventListener('abort', () => {
+          // Remove the client when the request is aborted
+          removeClient(controller);
+        });
+      },
+    }),
+    { headers }
+  );
 }
