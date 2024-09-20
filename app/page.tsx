@@ -39,7 +39,6 @@ export default function Home() {
 
   useEffect(() => {
     if (status === 'loading') {
-      // Do nothing while loading
       return;
     }
     if (!session) {
@@ -96,7 +95,6 @@ export default function Home() {
         {selectedQuestion ? (
           <ChallengeTerminal
             question={selectedQuestion}
-            questions={questions}
             onComplete={handleChallengeCompletion}
             userName={session?.user?.name?.split(' ')[0] || 'Hacker'} // Passing first name of the user
           />
