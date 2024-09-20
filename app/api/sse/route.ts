@@ -1,10 +1,7 @@
 // api/sse/route.ts
 
-import { NextResponse } from 'next/server';
-import pool from '../../../lib/db'; // Ensure the correct path
-import { NextRequest } from 'next/server';
-
-let clients: ReadableStreamDefaultController[] = [];
+import { NextRequest, NextResponse } from 'next/server';
+import { addClient, removeClient } from '../../../lib/sse';
 
 export async function GET(req: NextRequest) {
   const headers = {
@@ -15,19 +12,12 @@ export async function GET(req: NextRequest) {
 
   return new Response(new ReadableStream({
     start(controller) {
-      clients.push(controller);
+      addClient(controller);
 
       // Remove the client when the connection is closed
       req.signal.addEventListener('abort', () => {
-        clients = clients.filter(client => client !== controller);
+        removeClient(controller);
       });
     },
   }), { headers });
-}
-
-export function sendToClients(newQuestion: any) {
-  clients.forEach((client) => {
-    const message = `data: ${JSON.stringify(newQuestion)}\n\n`;
-    client.enqueue(new TextEncoder().encode(message));
-  });
 }
