@@ -6,7 +6,7 @@ const vt323 = VT323({ weight: '400', subsets: ['latin'] })
 
 export const metadata = {
   title: 'Codex Cryptum',
-  description: 'A cybersecurity hackathon workshop focused on Linux',
+  description: 'A cybersecurity hackathon workshop',
 }
 
 export default function RootLayout({
