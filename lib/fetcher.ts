@@ -1,10 +1,12 @@
-export const fetcher = async (url: string, headers?: HeadersInit) => {
-    const res = await fetch(url, { headers });
-  
-    if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.message || 'An error occurred while fetching the data.');
-    }
-  
-    return res.json();
-  };
+export const fetcher = (url: string) =>
+  fetch(url)
+    .then((res) => {
+      if (!res.ok) {
+        return res.json().then((error) => Promise.reject(error));
+      }
+      return res.json();
+    })
+    .catch((error) => {
+      console.error('Fetcher error:', error);
+      throw error;
+    });

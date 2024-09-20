@@ -1,14 +1,42 @@
+import { NextRequest, NextResponse } from 'next/server';
+import pool from '../../../lib/db';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../api/auth/[...nextauth]/route';
+
 export const dynamic = 'force-dynamic';
 
-import pool from '../../../lib/db';
-import { NextRequest, NextResponse } from 'next/server';
-
 export async function POST(req: NextRequest) {
-  const { questionId, userAnswer, userName } = await req.json();
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+  }
+
+  const userName = session.user?.name;
+  const { questionId, userAnswer } = await req.json();
 
   try {
-    const result = await pool.query('SELECT answer FROM questions WHERE id = $1', [questionId]);
-    const correctAnswer = result.rows[0]?.answer;
+    const userExistsResult = await pool.query(
+      'SELECT * FROM leaderboard WHERE user_name = $1',
+      [userName]
+    );
+
+    if (userExistsResult.rows.length === 0) {
+      await pool.query(
+        'INSERT INTO leaderboard (user_name, points) VALUES ($1, $2)',
+        [userName, 0]
+      );
+    }
+
+    const questionResult = await pool.query(
+      'SELECT answer FROM questions WHERE id = $1',
+      [questionId]
+    );
+
+    if (questionResult.rows.length === 0) {
+      return NextResponse.json({ message: 'Question not found' }, { status: 404 });
+    }
+
+    const correctAnswer = questionResult.rows[0].answer;
 
     if (correctAnswer && correctAnswer.toLowerCase() === userAnswer.toLowerCase()) {
       await pool.query(
@@ -17,8 +45,8 @@ export async function POST(req: NextRequest) {
       );
 
       await pool.query(
-        'INSERT INTO leaderboard (user_name, points) VALUES ($1, $2) ON CONFLICT (user_name) DO UPDATE SET points = leaderboard.points + $2',
-        [userName, 10]
+        'UPDATE leaderboard SET points = points + $1 WHERE user_name = $2',
+        [10, userName]
       );
 
       return NextResponse.json({ message: 'Correct answer', completed: true });

@@ -1,15 +1,35 @@
+'use client';
+
 import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table';
+import { useEffect, useState } from 'react';
 
-// Define the type for each leaderboard entry
 interface LeaderboardEntry {
   id?: string;
   user_name: string;
   points: number;
 }
 
-// Explicitly type the leaderboard prop
-export default function Leaderboard({ leaderboard }: { leaderboard: LeaderboardEntry[] }) {
+export default function Leaderboard() {
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+
+  useEffect(() => {
+    const eventSource = new EventSource('/api/sse-leaderboard');
+
+    eventSource.onmessage = (e) => {
+      const data = JSON.parse(e.data);
+      setLeaderboard(data);
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
+
   return (
     <Card className="bg-black border-green-500 flex-grow backdrop-blur-sm bg-opacity-30">
       <CardHeader>
@@ -19,7 +39,6 @@ export default function Leaderboard({ leaderboard }: { leaderboard: LeaderboardE
       </CardHeader>
       <CardContent>
         <div className="overflow-y-auto max-h-[350px]">
-          {/* Ensure Table, TableHeader, etc., can accept className */}
           <Table className="min-w-full divide-y divide-green-500 border-collapse bg-black">
             <TableHeader className="bg-black">
               <TableRow>

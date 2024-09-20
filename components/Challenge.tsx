@@ -6,6 +6,7 @@ import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import ScrollArea from './ui/ScrollArea';
 import { toast } from 'react-toastify';
+import { useSession } from 'next-auth/react';
 
 interface ChallengeProps {
   question: {
@@ -16,10 +17,10 @@ interface ChallengeProps {
     completed: boolean;
   };
   onComplete: (questionId: string) => void; // Handler to update completion status
-  userName: string; // Passed from parent
 }
 
-export default function Challenge({ question, onComplete, userName }: ChallengeProps) {
+export default function Challenge({ question, onComplete }: ChallengeProps) {
+  const { data: session } = useSession();
   const [userAnswer, setUserAnswer] = useState('');
   const [terminalLines, setTerminalLines] = useState<string[]>([]);
   const [showResult, setShowResult] = useState(false);
@@ -57,7 +58,6 @@ export default function Challenge({ question, onComplete, userName }: ChallengeP
         body: JSON.stringify({
           questionId: question.id,
           userAnswer,
-          userName,
         }),
       });
 
@@ -93,7 +93,9 @@ export default function Challenge({ question, onComplete, userName }: ChallengeP
         <ScrollArea className="flex-grow mb-4 rounded h-48 sm:h-56 md:h-64 lg:h-72 xl:h-80" ref={scrollAreaRef}>
           <div className="p-4 space-y-2">
             {terminalLines.map((line, index) => (
-              <div key={index} className="break-all">{line}</div>
+              <div key={index} className="break-all">
+                {line}
+              </div>
             ))}
           </div>
         </ScrollArea>
