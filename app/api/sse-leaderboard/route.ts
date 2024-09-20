@@ -1,9 +1,10 @@
-export const dynamic = 'force-dynamic'; // Ensure that this route is always treated as dynamic
+export const dynamic = 'force-dynamic'; // Ensure this route is always treated as dynamic and not pre-rendered
 
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@lib/db';
 
 export async function GET(request: NextRequest) {
+  // Skip the build phase
   if (process.env.NEXT_PHASE === 'build') {
     return NextResponse.json({ message: 'Skipping DB call during build phase' });
   }
