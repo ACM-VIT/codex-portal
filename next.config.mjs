@@ -1,9 +1,6 @@
-import { PHASE_PRODUCTION_BUILD } from 'next/constants';
-
-export default (phase, { defaultConfig }) => {
-  return {
+export default {
     env: {
-      NEXT_PHASE: phase === PHASE_PRODUCTION_BUILD ? 'build' : 'runtime',
+      NEXT_PHASE: process.env.NEXT_PHASE || 'runtime',
     },
   };
-};
+  
