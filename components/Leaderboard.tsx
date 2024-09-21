@@ -26,22 +26,34 @@ export default function Leaderboard({ currentUserName }: LeaderboardProps) {
     // Create an EventSource to listen to the SSE updates
     const eventSource = new EventSource("/api/sse-leaderboard");
 
+    // Fallback timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.error("Timeout: No data received after 10 seconds");
+        setLoading(false); // stop loading
+      }
+    }, 10000); // 10 seconds
+
     eventSource.onmessage = (event) => {
+      console.log("Received data:", event.data); // Debug log
       const data = JSON.parse(event.data);
       setLeaderboard(data);
-      setLoading(false);
+      setLoading(false); // stop loading once data is received
+      clearTimeout(timeoutId); // clear the fallback timeout
     };
 
     eventSource.onerror = (error) => {
       console.error("Error with SSE connection:", error);
       eventSource.close();
+      setLoading(false); // stop loading in case of error
     };
 
     // Cleanup the EventSource on component unmount
     return () => {
       eventSource.close();
+      clearTimeout(timeoutId);
     };
-  }, []);
+  }, [loading]);
 
   const userEntry = leaderboard.find(
     (entry) => entry.user_name === session?.user?.name
