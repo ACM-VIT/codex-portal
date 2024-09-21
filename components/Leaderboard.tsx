@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react";
 
 // Function to clean the user name, removing any trailing numbers
 const cleanUserName = (fullName: string): string => {
-  return fullName.replace(/\s*\d+$/, '');
+  return fullName.replace(/\s*\d+$/, "");
 };
 
 const Loader = () => (
@@ -18,68 +18,15 @@ const Loader = () => (
   </div>
 );
 
-export default function Leaderboard() {
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+interface LeaderboardProps {
+  leaderboard: LeaderboardEntry[];
+  currentUserName: string;
+}
+
+export default function Leaderboard({ leaderboard, currentUserName }: LeaderboardProps) {
   const { data: session } = useSession();
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  useEffect(() => {
-    if (!eventSourceRef.current) {
-      eventSourceRef.current = new EventSource("/api/sse-leaderboard");
-
-      eventSourceRef.current.onopen = () => {
-        setLoading(false);
-        setError(null);
-      };
-
-      eventSourceRef.current.onmessage = (e: MessageEvent) => {
-        try {
-          const data = JSON.parse(e.data);
-          if (Array.isArray(data)) {
-            setLeaderboard(data);
-          } else {
-            throw new Error("Invalid data format received.");
-          }
-        } catch (err) {
-          console.error("Error parsing leaderboard data:", err);
-          setError("Failed to parse leaderboard data.");
-          toast.error("Failed to parse leaderboard data.");
-        }
-      };
-
-      eventSourceRef.current.onerror = (e: Event) => {
-        console.error("SSE connection error:", e);
-        setError("Failed to connect to leaderboard stream.");
-        toast.error("Failed to connect to leaderboard stream.");
-        eventSourceRef.current?.close();
-      };
-    }
-
-    return () => {
-      eventSourceRef.current?.close();
-      eventSourceRef.current = null;
-    };
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="text-center text-green-500">
-        <Loader />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-red-500 text-center">
-        {error}
-      </div>
-    );
-  }
-
-  // Find the logged-in user's entry
   const userEntry = leaderboard.find(
     (entry) => entry.user_name === session?.user?.name
   );
@@ -91,21 +38,19 @@ export default function Leaderboard() {
         {leaderboard.map((player, index) => (
           <Card
             key={`${player.user_name}-${player.points}-${index}`}
-            className="bg-gray-900 text-green-500 border-none"
+            className={`bg-gray-900 text-green-500 border-none ${
+              player.user_name === currentUserName ? "bg-green-800" : ""
+            }`}
           >
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-lg font-medium">
                   {DOMPurify.sanitize(cleanUserName(player.user_name))}
-                  {player.user_name === session?.user?.name ? ' (You)' : ''}
+                  {player.user_name === currentUserName ? " (You)" : ""}
                 </h4>
-                <span className="text-sm">
-                  Rank: {index + 1}
-                </span>
+                <span className="text-sm">Rank: {index + 1}</span>
               </div>
-              <p className="mt-2 text-sm text-gray-300">
-                Score: {player.points}
-              </p>
+              <p className="mt-2 text-sm text-gray-300">Score: {player.points}</p>
             </CardContent>
           </Card>
         ))}
@@ -120,7 +65,7 @@ export default function Leaderboard() {
                   {DOMPurify.sanitize(cleanUserName(userEntry.user_name))} (You)
                 </h4>
                 <span className="text-sm">
-                  Rank: {leaderboard.findIndex(entry => entry.user_name === userEntry.user_name) + 1}
+                  Rank: {leaderboard.findIndex((entry) => entry.user_name === userEntry.user_name) + 1}
                 </span>
               </div>
               <p className="mt-2 text-sm text-gray-300">

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Card, CardContent } from "./ui/Card";
-import ScrollArea from "./ui/ScrollArea"; // Import ScrollArea component
+import ScrollArea from "./ui/ScrollArea";
 import { Question } from "../lib/types";
 import { toast } from "react-toastify";
 
@@ -17,20 +17,17 @@ export default function QuestionsMenu({
   selectedQuestion,
   onSelectQuestion,
 }: QuestionsMenuProps) {
+
   const handleSelect = (question: Question) => {
-    if (question.completed) {
-      toast.info(`You have already completed the "${question.name}" challenge.`);
-      return;
-    }
     onSelectQuestion(question);
-    toast.info(`Changed to directory: ${question.name}`);
+    toast.info(`Selected question: ${question.name}`);
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 h-full">
       <h3 className="text-xl font-semibold text-green-500">Available Challenges</h3>
       {/* Scrollable list with invisible scrollbar */}
-      <ScrollArea className="space-y-2 scrollbar-hide">
+      <ScrollArea className="space-y-2 scrollbar-hide h-full">
         {questions.map((q) => (
           <Card
             key={q.id}
@@ -39,7 +36,9 @@ export default function QuestionsMenu({
               selectedQuestion?.id === q.id
                 ? "border-green-500"
                 : "border-transparent"
-            } hover:border-green-500 transition-colors bg-gray-900 text-green-500`}
+            } hover:border-green-500 transition-colors bg-gray-900 text-green-500 ${
+              q.completed ? "bg-opacity-75" : ""
+            }`}
           >
             <CardContent className="p-4">
               <div className="flex justify-between items-center">

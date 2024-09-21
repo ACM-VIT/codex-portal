@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import ChallengeTerminal from "../components/ChallengeTerminal";
 import Leaderboard from "../components/Leaderboard";
@@ -17,7 +17,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isTerminalOpen, setIsTerminalOpen] = useState(false); // Default to QuestionBox
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
 
   const {
     data: questions,
@@ -74,6 +74,15 @@ export default function Home() {
     }
   };
 
+  useEffect(() => {
+    if (questions && selectedQuestion) {
+      const updatedQuestion = questions.find(q => q.id === selectedQuestion.id);
+      if (updatedQuestion) {
+        setSelectedQuestion(updatedQuestion);
+      }
+    }
+  }, [questions, selectedQuestion]);
+
   if (isLoading || status === "loading") {
     return <LoadingScreen duration={1500} onComplete={handleLoadingComplete} />;
   }
@@ -98,21 +107,24 @@ export default function Home() {
     <div className="flex flex-col lg:flex-row h-screen bg-gray-900 text-green-500">
       {/* Left Side: Leaderboard */}
       <div className="w-full lg:w-1/4 flex flex-col border-r border-gray-700 p-4 overflow-y-hidden bg-gray-800">
-        <Leaderboard />
+        <Leaderboard
+          leaderboard={leaderboard}
+          currentUserName={session?.user?.name || ''}
+        />
       </div>
 
       {/* Middle: Challenge Terminal or Question Box */}
       <div className="w-full lg:w-1/2 p-4 flex flex-col bg-gray-900">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl md:text-4xl font-bold text-green-500">
-            Codex Cryptum v3.0
+                Codex Cryptum v3.0
           </h2>
           <Button
             variant="ghost"
             onClick={() => setIsTerminalOpen(!isTerminalOpen)}
             className="text-green-500 text-2xl"
           >
-            {isTerminalOpen ? 'X' : '+'} {/* Show '+' when terminal is closed */}
+            {isTerminalOpen ? 'X' : '+'}
           </Button>
         </div>
 
@@ -125,7 +137,7 @@ export default function Home() {
                   onComplete={handleChallengeCompletion}
                   userName={session?.user?.name?.split(" ")[0] || "Hacker"}
                   questions={questions}
-                  onClose={() => setIsTerminalOpen(false)} 
+                  onClose={() => setIsTerminalOpen(false)}
                 />
               ) : (
                 <QuestionBox
@@ -157,14 +169,14 @@ export default function Home() {
       {/* Toast Notifications */}
       <ToastContainer
         position="top-right"
-        autoClose={5000}
-        hideProgressBar={false}
+        autoClose={3000}
+        hideProgressBar
         newestOnTop
         closeOnClick
         pauseOnFocusLoss
         draggable
         pauseOnHover
-        toastStyle={{ backgroundColor: "black", color: "green" }}
+        toastStyle={{ backgroundColor: "black", color: "green", fontSize: "0.9rem" }}
       />
     </div>
   );
