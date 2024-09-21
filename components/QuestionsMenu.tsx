@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Card, CardContent } from "./ui/Card";
+import ScrollArea from "./ui/ScrollArea"; // Import ScrollArea component
 import { Question } from "../lib/types";
 import { toast } from "react-toastify";
 
@@ -28,7 +29,8 @@ export default function QuestionsMenu({
   return (
     <div className="space-y-4">
       <h3 className="text-xl font-semibold text-green-500">Available Challenges</h3>
-      <div className="space-y-2">
+      {/* Scrollable list with invisible scrollbar */}
+      <ScrollArea className="space-y-2 scrollbar-hide">
         {questions.map((q) => (
           <Card
             key={q.id}
@@ -65,7 +67,7 @@ export default function QuestionsMenu({
             </CardContent>
           </Card>
         ))}
-      </div>
+      </ScrollArea>
     </div>
   );
 }

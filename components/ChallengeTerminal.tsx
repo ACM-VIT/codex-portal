@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/Card';
 import { toast } from 'react-toastify';
-import { Button } from '@/components/ui/Button';
 import { Question } from '@/lib/types';
+import ScrollArea from '@/components/ui/ScrollArea'; 
 
 interface ChallengeProps {
   question?: Question | null;
@@ -23,7 +23,7 @@ export default function ChallengeTerminal({
 }: ChallengeProps) {
   const [terminalOutput, setTerminalOutput] = useState<string[]>([]);
   const [currentPath, setCurrentPath] = useState(`/home/${userName}`);
-  const [previousPath, setPreviousPath] = useState(''); // Store the previous path for 'cd -'
+  const [previousPath, setPreviousPath] = useState('');
   const [inputValue, setInputValue] = useState('');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
@@ -32,27 +32,22 @@ export default function ChallengeTerminal({
   const hasStartedRef = useRef(false);
   const isChangingDirectoryRef = useRef(false);
   
-  // Declare isMountedRef here to fix the error
-  const isMountedRef = useRef(true);
-
-  // Append messages to the terminal output
-  const appendToTerminal = useCallback((messages: string[]) => {
-    setTerminalOutput(prev => [...prev, ...messages]);
-  }, []);
-
-  // Generate the prompt string
-  const promptString = useCallback(() => `${userName}@codex-cryptum:${currentPath}$ `, [userName, currentPath]);
-
-  // Update the current directory path
+  // Function to update the current directory
   const updateDirectory = useCallback(
     (newPath: string) => {
       if (currentPath !== newPath) {
-        setPreviousPath(currentPath); // Store the current path as previous path
+        setPreviousPath(currentPath);
         setCurrentPath(newPath);
       }
     },
     [currentPath]
   );
+
+  const appendToTerminal = useCallback((messages: string[]) => {
+    setTerminalOutput((prev) => [...prev, ...messages]);
+  }, []);
+
+  const promptString = useCallback(() => `${currentPath}$ `, [currentPath]);
 
   // Display help information
   const displayHelp = useCallback(() => {
@@ -213,27 +208,6 @@ export default function ChallengeTerminal({
   }, [question, appendToTerminal]);
 
   // Handle answer submission
-  const handleAnswer = useCallback(
-    async (args: string[]) => {
-      if (currentPath.includes('/challenges')) {
-        await submitAnswer(args.join(' '));
-      } else if (args.length >= 2) {
-        const questionName = args[0];
-        const answer = args.slice(1).join(' ');
-        const currentQuestion = questions.find(q => q.name === questionName);
-        if (currentQuestion) {
-          await submitAnswer(answer, currentQuestion);
-        } else {
-          appendToTerminal([`Question not found: ${questionName}`]);
-        }
-      } else {
-        appendToTerminal(['Invalid answer command format.']);
-      }
-    },
-    [currentPath, questions, appendToTerminal]
-  );
-
-  // Submit answer to the backend
   const submitAnswer = useCallback(
     async (answer: string, currentQuestion = question) => {
       if (!currentQuestion) {
@@ -254,7 +228,6 @@ export default function ChallengeTerminal({
           }),
         });
 
-        const data = await res.json();
         if (res.ok) {
           appendToTerminal(['Access granted. Challenge completed!']);
           onComplete(currentQuestion.id);
@@ -269,6 +242,26 @@ export default function ChallengeTerminal({
       }
     },
     [question, appendToTerminal, onComplete]
+  );
+
+  const handleAnswer = useCallback(
+    async (args: string[]) => {
+      if (currentPath.includes('/challenges')) {
+        await submitAnswer(args.join(' '));
+      } else if (args.length >= 2) {
+        const questionName = args[0];
+        const answer = args.slice(1).join(' ');
+        const currentQuestion = questions.find(q => q.name === questionName);
+        if (currentQuestion) {
+          await submitAnswer(answer, currentQuestion);
+        } else {
+          appendToTerminal([`Question not found: ${questionName}`]);
+        }
+      } else {
+        appendToTerminal(['Invalid answer command format.']);
+      }
+    },
+    [currentPath, questions, appendToTerminal, submitAnswer]
   );
 
   // Handle command execution
@@ -391,11 +384,10 @@ export default function ChallengeTerminal({
     }
 
     return () => {
-      isMountedRef.current = false;
+      isChangingDirectoryRef.current = false;
     };
   }, [startTerminalSequence]);
 
-  // Scroll to the bottom whenever terminal output updates
   useEffect(() => {
     if (scrollAreaRef.current) {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
@@ -411,40 +403,17 @@ export default function ChallengeTerminal({
         appendToTerminal([`Changed directory to ${newPath}`]);
       }
     }
-
-    return () => {
-      // Clean up
-    };
-  }, [question, userName, appendToTerminal, currentPath, updateDirectory, startTerminalSequence]);
+  }, [question, userName, appendToTerminal, currentPath, updateDirectory]);
 
   return (
-    <Card
-      className="w-full h-full bg-gray-900 text-green-500 font-mono border border-white p-4 rounded-lg shadow-lg relative overflow-hidden"
-    >
+    <Card className="w-full h-full bg-gray-900 text-green-500 font-mono p-4 rounded-lg shadow-lg relative overflow-hidden">
       {/* Watermark */}
-      <div
-        className="absolute inset-0 opacity-20 pointer-events-none flex items-center justify-center"
-      >
-        <img
-          src="/images/cx.png"
-          alt="Watermark"
-          className="max-w-xs"
-        />
+      <div className="absolute inset-0 opacity-20 pointer-events-none flex items-center justify-center">
+        <img src="/images/cx.png" alt="Watermark" className="max-w-xs" />
       </div>
-      {/* 'X' button to close terminal */}
-      <Button
-        onClick={onClose}
-        variant="ghost"
-        className="text-red-500 hover:text-red-700 absolute top-2 right-2 text-xl"
-      >
-        ×
-      </Button>
       <CardContent className="p-2 flex flex-col h-full relative z-10">
-        {/* Scrollable terminal output */}
-        <div
-          className="flex-grow mb-2 overflow-auto"
-          ref={scrollAreaRef}
-        >
+        {/* Scrollable terminal output with hidden scrollbar */}
+        <ScrollArea className="flex-grow mb-2 scrollbar-hide" ref={scrollAreaRef}>
           <div className="space-y-2">
             {terminalOutput.map((line, index) => (
               <div key={index} className="whitespace-pre-wrap">
@@ -452,10 +421,9 @@ export default function ChallengeTerminal({
               </div>
             ))}
           </div>
-        </div>
-        {/* Prompt and input */}
+        </ScrollArea>
+        {/* Input area */}
         <div className="flex items-center">
-          <span className="mr-2">{promptString()}</span>
           <input
             type="text"
             value={inputValue}

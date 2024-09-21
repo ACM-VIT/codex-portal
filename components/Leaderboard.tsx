@@ -1,16 +1,15 @@
-// components/Leaderboard.tsx
-
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "./ui/Card";
 import { toast } from "react-toastify";
 import DOMPurify from "dompurify";
 import { LeaderboardEntry } from "../lib/types";
 import { useSession } from "next-auth/react";
 
-const getFirstName = (fullName: string): string => {
-  return fullName.split(' ')[0];
+// Function to clean the user name, removing any trailing numbers
+const cleanUserName = (fullName: string): string => {
+  return fullName.replace(/\s*\d+$/, '');
 };
 
 const Loader = () => (
@@ -24,39 +23,43 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const { data: session } = useSession();
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    const eventSource = new EventSource("/api/sse-leaderboard");
+    if (!eventSourceRef.current) {
+      eventSourceRef.current = new EventSource("/api/sse-leaderboard");
 
-    eventSource.onopen = () => {
-      setLoading(false);
-      setError(null);
-    };
+      eventSourceRef.current.onopen = () => {
+        setLoading(false);
+        setError(null);
+      };
 
-    eventSource.onmessage = (e) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (Array.isArray(data)) {
-          setLeaderboard(data);
-        } else {
-          throw new Error("Invalid data format received.");
+      eventSourceRef.current.onmessage = (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data);
+          if (Array.isArray(data)) {
+            setLeaderboard(data);
+          } else {
+            throw new Error("Invalid data format received.");
+          }
+        } catch (err) {
+          console.error("Error parsing leaderboard data:", err);
+          setError("Failed to parse leaderboard data.");
+          toast.error("Failed to parse leaderboard data.");
         }
-      } catch (err) {
-        console.error("Error parsing leaderboard data:", err);
-        setError("Failed to parse leaderboard data.");
-        toast.error("Failed to parse leaderboard data.");
-      }
-    };
+      };
 
-    eventSource.onerror = (e) => {
-      console.error("SSE connection error:", e);
-      setError("Failed to connect to leaderboard stream.");
-      toast.error("Failed to connect to leaderboard stream.");
-      eventSource.close();
-    };
+      eventSourceRef.current.onerror = (e: Event) => {
+        console.error("SSE connection error:", e);
+        setError("Failed to connect to leaderboard stream.");
+        toast.error("Failed to connect to leaderboard stream.");
+        eventSourceRef.current?.close();
+      };
+    }
 
     return () => {
-      eventSource.close();
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
     };
   }, []);
 
@@ -84,16 +87,16 @@ export default function Leaderboard() {
   return (
     <div className="flex flex-col h-full">
       <h3 className="text-xl font-semibold text-green-500 mb-4">Leaderboard</h3>
-      <div className="flex-1 overflow-y-auto space-y-2">
+      <div className="flex-1 no-scrollbar overflow-y-auto space-y-2">
         {leaderboard.map((player, index) => (
           <Card
             key={`${player.user_name}-${player.points}-${index}`}
-            className="bg-gray-900 text-green-500"
+            className="bg-gray-900 text-green-500 border-none"
           >
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-lg font-medium">
-                  {DOMPurify.sanitize(getFirstName(player.user_name))}
+                  {DOMPurify.sanitize(cleanUserName(player.user_name))}
                   {player.user_name === session?.user?.name ? ' (You)' : ''}
                 </h4>
                 <span className="text-sm">
@@ -110,11 +113,11 @@ export default function Leaderboard() {
       {/* Fixed User Entry at the Bottom */}
       {userEntry && (
         <div className="mt-2">
-          <Card className="bg-gray-900 text-green-500">
+          <Card className="bg-gray-900 text-green-500 border-none">
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-lg font-medium">
-                  {DOMPurify.sanitize(getFirstName(userEntry.user_name))} (You)
+                  {DOMPurify.sanitize(cleanUserName(userEntry.user_name))} (You)
                 </h4>
                 <span className="text-sm">
                   Rank: {leaderboard.findIndex(entry => entry.user_name === userEntry.user_name) + 1}

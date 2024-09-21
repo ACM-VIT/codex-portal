@@ -9,7 +9,11 @@ interface TableProps extends React.HTMLAttributes<HTMLTableElement> {}
 
 const Table = React.forwardRef<HTMLTableElement, TableProps>(
   ({ className, ...props }, ref) => (
-    <table ref={ref} className={cn("min-w-full divide-y divide-gray-200", className)} {...props} />
+    <table
+      ref={ref}
+      className={cn("min-w-full divide-y divide-gray-700", className)}
+      {...props}
+    />
   )
 );
 Table.displayName = "Table";
@@ -18,7 +22,7 @@ const TableHeader = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <thead ref={ref} className={cn("bg-gray-50", className)} {...props} />
+  <thead ref={ref} className={cn("bg-gray-800", className)} {...props} />
 ));
 TableHeader.displayName = "TableHeader";
 
@@ -26,7 +30,11 @@ const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
 >(({ className, ...props }, ref) => (
-  <tbody ref={ref} className={cn("bg-white divide-y divide-gray-200", className)} {...props} />
+  <tbody
+    ref={ref}
+    className={cn("bg-gray-900 divide-y divide-gray-700", className)}
+    {...props}
+  />
 ));
 TableBody.displayName = "TableBody";
 
@@ -45,7 +53,7 @@ const TableHead = React.forwardRef<
   <th
     ref={ref}
     className={cn(
-      "px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-gray-500",
+      "px-4 py-2 text-left text-xs font-medium uppercase tracking-wider text-green-500",
       className
     )}
     {...props}
@@ -59,7 +67,10 @@ const TableCell = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <td
     ref={ref}
-    className={cn("px-4 py-2 whitespace-nowrap text-sm text-gray-900", className)}
+    className={cn(
+      "px-4 py-2 whitespace-nowrap text-sm text-green-500",
+      className
+    )}
     {...props}
   />
 ));

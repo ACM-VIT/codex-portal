@@ -2,24 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar for Webkit browsers (Chrome, Safari, etc.) */
-::-webkit-scrollbar {
-  width: 8px; /* Change this value to adjust scrollbar width */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent; /* Make the track transparent */
+.no-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
 }
 
-::-webkit-scrollbar-thumb {
-  background-color: rgba(0, 255, 0, 0.3); /* Adjust the transparency of the scrollbar */
-  border-radius: 10px; /* Rounded edges for the scrollbar */
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
 }
 
 /* Custom scrollbar for Firefox */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(0, 255, 0, 0.3) transparent;
+  scrollbar-color: transparent;
 }
 
 @keyframes blink {
@@ -92,6 +94,15 @@
 }
 
 .invisible-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }

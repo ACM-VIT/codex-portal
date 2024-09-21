@@ -1,5 +1,3 @@
-// app/page.tsx
-
 "use client";
 
 import { useState } from "react";
@@ -19,7 +17,7 @@ export default function Home() {
   const { data: session, status } = useSession();
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isTerminalOpen, setIsTerminalOpen] = useState(true);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false); // Default to QuestionBox
 
   const {
     data: questions,
@@ -114,7 +112,7 @@ export default function Home() {
             onClick={() => setIsTerminalOpen(!isTerminalOpen)}
             className="text-green-500 text-2xl"
           >
-            {isTerminalOpen ? 'X' : '+'}
+            {isTerminalOpen ? 'X' : '+'} {/* Show '+' when terminal is closed */}
           </Button>
         </div>
 
@@ -127,12 +125,12 @@ export default function Home() {
                   onComplete={handleChallengeCompletion}
                   userName={session?.user?.name?.split(" ")[0] || "Hacker"}
                   questions={questions}
-                  onClose={() => setIsTerminalOpen(false)} // Added onClose prop
+                  onClose={() => setIsTerminalOpen(false)} 
                 />
               ) : (
                 <QuestionBox
                   question={selectedQuestion}
-                  onSubmitAnswer={handleAnswerSubmission} // Defined handleAnswerSubmission
+                  onSubmitAnswer={handleAnswerSubmission}
                 />
               )}
             </>
