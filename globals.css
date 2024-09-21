@@ -85,3 +85,13 @@
   background-color: var(--button-bg);
   color: var(--button-text);
 }
+
+.invisible-scrollbar::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+.invisible-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

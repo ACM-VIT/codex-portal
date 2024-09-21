@@ -1,3 +1,5 @@
+// app/api/sse/route.ts
+
 export const dynamic = 'force-dynamic';
 
 import { NextRequest } from 'next/server';

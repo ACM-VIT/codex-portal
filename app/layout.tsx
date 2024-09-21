@@ -1,8 +1,12 @@
+// layout.tsx
+
 import { ReactNode } from 'react';
 import '../globals.css';
 import { VT323 } from 'next/font/google';
 import SessionProviderWrapper from '../components/SessionProviderWrapper';
 import AuthWrapper from '../components/AuthWrapper';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const vt323 = VT323({ weight: '400', subsets: ['latin'] });
 
@@ -20,6 +24,16 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <div className="flex-grow relative z-0">{children}</div>
           </AuthWrapper>
         </SessionProviderWrapper>
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
       </body>
     </html>
   );
