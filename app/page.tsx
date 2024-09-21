@@ -33,7 +33,7 @@ interface Question {
 }
 
 export default function Home() {
-  const { data: session, status } = useSession(); // <-- Destructure session and status from useSession
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,7 +53,6 @@ export default function Home() {
     [questions, selectedQuestion]
   );
 
-  // Function to stop showing the loading screen after the set duration
   const handleLoadingComplete = () => {
     setIsLoading(false);
   };
@@ -66,9 +65,8 @@ export default function Home() {
     );
   };
 
-  // Show loading screen if still loading session data or questions
   if (isLoading || status === "loading") {
-    return <LoadingScreen duration={3000} onComplete={handleLoadingComplete} />;
+    return <LoadingScreen duration={1500} onComplete={handleLoadingComplete} />;
   }
 
   if (!questions || !leaderboard) {
@@ -115,7 +113,7 @@ export default function Home() {
           <ChallengeTerminal
             question={selectedQuestion}
             onComplete={handleChallengeCompletion}
-            userName={session?.user?.name?.split(" ")[0] || "Hacker"} // <-- Correctly access session data here
+            userName={session?.user?.name?.split(" ")[0] || "Hacker"}
             questions={questions}
           />
         </div>

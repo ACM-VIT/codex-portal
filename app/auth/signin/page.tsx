@@ -19,7 +19,6 @@ export default function SignIn() {
     }
   }, [status, router]);
 
-  // Provide a loading state while session is being checked
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center h-screen bg-black text-green-500 font-mono">
@@ -28,7 +27,6 @@ export default function SignIn() {
     );
   }
 
-  // Handle keyboard navigation and command execution
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       executeCommand();
@@ -66,7 +64,7 @@ export default function SignIn() {
     setHistoryIndex(-1);
 
     if (trimmedCommand === 'signin') {
-      signIn('google'); // Specify 'google' provider (or change to your desired provider)
+      signIn('google'); 
     } else if (trimmedCommand === 'help') {
       setFeedback("Available commands:\n- signin: Sign in to your account\n- help: Show this help message");
     } else {
@@ -76,12 +74,11 @@ export default function SignIn() {
     setCommand('');
   };
 
-  // If user is not authenticated, render the terminal UI
   return (
     <div className="flex items-center justify-center h-screen bg-black text-green-500 font-mono px-4">
       <div className="w-full max-w-md p-8 bg-black border border-green-500 rounded">
         <div className="mb-6">
-          <pre>Welcome to Codex Cryptum Terminal</pre>
+          <pre>Welcome to Codex Cryptum</pre>
         </div>
         <div className="flex items-center mb-4">
           <span className="mr-2">{'>'}</span>

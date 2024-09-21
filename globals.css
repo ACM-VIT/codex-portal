@@ -53,3 +53,35 @@
   border-right: 2px solid green;
   animation: blink 1s step-start infinite;
 }
+
+
+:root.light-blue {
+  --background: #cce7e8; /* Softer light blue background */
+  --foreground: #1f2d3d; /* Darker, softer text for readability */
+  --secondary: #a8d5d8; /* Muted secondary background for cards */
+  --input-bg: #dfeff1; /* Light background for input fields */
+  --button-bg: #6ea4c9; /* Muted blue for buttons */
+  --button-text: #f4f9f9; /* Off-white button text */
+}
+
+.light-blue .bg-background {
+  background-color: var(--background);
+}
+
+.light-blue .text-foreground {
+  color: var(--foreground);
+}
+
+.light-blue .bg-secondary {
+  background-color: var(--secondary);
+}
+
+.light-blue input {
+  background-color: var(--input-bg);
+  color: var(--foreground);
+}
+
+.light-blue button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
+}

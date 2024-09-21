@@ -46,7 +46,13 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light-blue');
+    } else {
+      document.documentElement.classList.remove('dark');
+      document.documentElement.classList.add('light-blue');
+    }
   }, [isDarkMode]);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -144,7 +150,7 @@ export default function AdminPage() {
   return (
     <div className={`min-h-screen p-8 ${isDarkMode ? 'dark' : ''} bg-background text-foreground`}>
       <div className="flex flex-col lg:flex-row gap-8 h-full">
-        <Card className="flex-1">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">Add New Question</CardTitle>
           </CardHeader>
@@ -200,7 +206,7 @@ export default function AdminPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex-1">
+        <Card className="w-full">
           <CardHeader>
             <CardTitle className="text-xl font-bold">Active Questions</CardTitle>
           </CardHeader>
