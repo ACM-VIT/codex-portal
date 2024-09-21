@@ -15,7 +15,21 @@ export async function DELETE(
 
   if (!/^\d+$/.test(id)) {
     return NextResponse.json(
-      { error: 'Invalid question ID format. ID must be a positive integer.' },
+      {
+        error:
+          'Invalid question ID format. ID must be a positive integer.',
+      },
+      { status: 400 }
+    );
+  }
+
+  const questionIdInt = parseInt(id, 10);
+  if (isNaN(questionIdInt)) {
+    return NextResponse.json(
+      {
+        error:
+          'Invalid question ID format. ID must be a positive integer.',
+      },
       { status: 400 }
     );
   }
@@ -24,7 +38,10 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user || !session.user.name) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     // Optional: Check if the user has admin privileges
@@ -38,35 +55,56 @@ export async function DELETE(
       await client.query('BEGIN');
 
       // Delete related entries in user_challenge_completions
-      await client.query('DELETE FROM user_challenge_completions WHERE question_id = $1', [id]);
+      await client.query(
+        'DELETE FROM user_challenge_completions WHERE question_id = $1',
+        [questionIdInt]
+      );
+
+      // Delete related entries in submissions
+      await client.query(
+        'DELETE FROM submissions WHERE question_id = $1',
+        [questionIdInt]
+      );
 
       // Delete the question
       const questionDeletion = await client.query(
         'DELETE FROM questions WHERE id = $1 RETURNING *',
-        [parseInt(id, 10)] // Parse 'id' to integer since 'questions.id' is integer
+        [questionIdInt]
       );
 
       if (questionDeletion.rowCount === 0) {
         await client.query('ROLLBACK');
         client.release();
-        return NextResponse.json({ error: 'Question not found.' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Question not found.' },
+          { status: 404 }
+        );
       }
 
       await client.query('COMMIT');
       client.release();
 
-      return NextResponse.json({ message: 'Question deleted successfully.' }, { status: 200 });
+      return NextResponse.json(
+        { message: 'Question deleted successfully.' },
+        { status: 200 }
+      );
     } catch (err) {
       await client.query('ROLLBACK');
       client.release();
       console.error('Error during deletion:', err);
       return NextResponse.json(
-        { error: 'Failed to delete question. An error occurred during the transaction.' },
+        {
+          error:
+            'Failed to delete question. An error occurred during the transaction.',
+        },
         { status: 500 }
       );
     }
   } catch (err) {
     console.error('Database connection error:', err);
-    return NextResponse.json({ error: 'Database connection error.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Database connection error.' },
+      { status: 500 }
+    );
   }
 }

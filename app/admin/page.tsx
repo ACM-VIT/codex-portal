@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/Card";
 import { Input } from "../../components/ui/Input";
 import { Label } from "../../components/ui/Label";
@@ -18,12 +17,20 @@ import { Minus } from "lucide-react";
 interface Question {
   id: string;
   name: string;
+  description: string;
   difficulty: string;
   answer: string;
 }
 
+interface Submission {
+  id: string;
+  userName: string;
+  questionName: string;
+  status: "Failed" | "Completed";
+  timestamp: string;
+}
+
 export default function AdminPage() {
-  const { data: session, status } = useSession();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -33,6 +40,8 @@ export default function AdminPage() {
   const [answer, setAnswer] = useState("");
   const [responseMessage, setResponseMessage] = useState("");
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
+  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [deleteConfirmationId, setDeleteConfirmationId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchActiveQuestions = async () => {
@@ -50,6 +59,24 @@ export default function AdminPage() {
     };
 
     fetchActiveQuestions();
+  }, []);
+
+  useEffect(() => {
+    const fetchSubmissions = async () => {
+      try {
+        const res = await fetch("/api/submissions", { method: "GET" });
+        if (res.ok) {
+          const data = await res.json();
+          setSubmissions(data);
+        } else {
+          console.error("Failed to fetch submissions");
+        }
+      } catch (error) {
+        console.error("Error fetching submissions:", error);
+      }
+    };
+
+    fetchSubmissions();
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
@@ -80,7 +107,7 @@ export default function AdminPage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to add question.");
+        throw new Error(errorData.error || "Failed to add question.");
       }
 
       const data = await res.json();
@@ -94,6 +121,17 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteConfirmation = (id: string) => {
+    if (deleteConfirmationId === id) {
+      // If already clicked once, proceed to delete
+      removeQuestion(id);
+      setDeleteConfirmationId(null);
+    } else {
+      // Set the id to prompt confirmation
+      setDeleteConfirmationId(id);
+    }
+  };
+
   const removeQuestion = async (id: string) => {
     try {
       const res = await fetch(`/api/questions/${id}`, { method: "DELETE" });
@@ -101,6 +139,7 @@ export default function AdminPage() {
         setActiveQuestions((prevQuestions) =>
           prevQuestions.filter((q) => q.id !== id)
         );
+        setResponseMessage(`Question deleted successfully.`);
       } else {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to delete question");
@@ -163,14 +202,27 @@ export default function AdminPage() {
                   <span>
                     {question.name} - {question.difficulty}
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeQuestion(question.id)}
-                    aria-label={`Remove ${question.name}`}
-                  >
-                    <Minus className="h-4 w-4" />
-                  </Button>
+                  <div className="flex items-center">
+                    {deleteConfirmationId === question.id ? (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteConfirmation(question.id)}
+                        className="ml-2"
+                      >
+                        Delete
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteConfirmation(question.id)}
+                        aria-label={`Remove ${question.name}`}
+                      >
+                        <Minus className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
@@ -254,15 +306,44 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Right Side: Additional Admin Info */}
+      {/* Right Side: Submissions */}
       <div className="w-full lg:w-1/4 flex flex-col border-l border-gray-700 p-4 overflow-y-auto bg-gray-800">
-        <Card className="bg-gray-800 text-green-500">
+        <Card className="bg-gray-800 text-green-500 h-full">
           <CardHeader>
-            <CardTitle className="text-xl font-bold">Admin Info</CardTitle>
+            <CardTitle className="text-xl font-bold">Submissions</CardTitle>
           </CardHeader>
           <CardContent>
-            <p>Welcome, Admin!</p>
-            {/* You can add more admin functionalities here */}
+            <ul className="space-y-2 overflow-y-auto h-full">
+              {submissions.map((submission) => (
+                <li
+                  key={submission.id}
+                  className="p-2 bg-gray-700 rounded-md"
+                >
+                  <div className="flex justify-between">
+                    <span className="font-semibold">{submission.userName}</span>
+                    <span className="text-sm text-gray-400">
+                      {new Date(submission.timestamp).toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="mt-1">
+                    <span className="text-sm">
+                      Question: {submission.questionName}
+                    </span>
+                  </div>
+                  <div className="mt-1">
+                    <span
+                      className={`text-sm font-semibold ${
+                        submission.status === "Completed"
+                          ? "text-green-400"
+                          : "text-red-400"
+                      }`}
+                    >
+                      {submission.status}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </CardContent>
         </Card>
       </div>

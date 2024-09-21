@@ -5,26 +5,43 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '../../../lib/db';
 
-let clients: Array<WritableStreamDefaultWriter> = [];
+declare global {
+  // eslint-disable-next-line no-var
+  var broadcastLeaderboard: (() => Promise<void>) | undefined;
+  // eslint-disable-next-line no-var
+  var leaderboardInterval: NodeJS.Timeout | undefined;
+}
 
-// Broadcast leaderboard updates to all clients
-const broadcastLeaderboard = async () => {
-  try {
-    const res = await pool.query('SELECT user_name, points FROM leaderboard ORDER BY points DESC LIMIT 10');
-    const data = res.rows;
-    const payload = `data: ${JSON.stringify(data)}\n\n`;
+let clients: Array<WritableStreamDefaultWriter<any>> = [];
 
-    // Send the leaderboard update to all connected clients
-    clients.forEach((client) => {
-      client.write(payload);
-    });
-  } catch (error) {
-    console.error('Error broadcasting leaderboard data:', error);
-  }
-};
+if (!global.broadcastLeaderboard) {
+  global.broadcastLeaderboard = async () => {
+    let client;
+    try {
+      client = await pool.connect();
 
-// Interval to broadcast leaderboard data every 1 second
-const leaderboardInterval = setInterval(broadcastLeaderboard, 1000);
+      const res = await client.query(
+        'SELECT user_name, points FROM leaderboard ORDER BY points DESC LIMIT 10'
+      );
+      const data = res.rows;
+      const payload = `data: ${JSON.stringify(data)}\n\n`;
+
+      // Send the leaderboard update to all connected clients
+      clients.forEach((client) => {
+        client.write(payload);
+      });
+    } catch (error) {
+      console.error('Error broadcasting leaderboard data:', error);
+    } finally {
+      if (client) {
+        client.release();
+      }
+    }
+  };
+
+  // Start the interval only once
+  global.leaderboardInterval = setInterval(global.broadcastLeaderboard, 5000);
+}
 
 export async function GET(request: NextRequest) {
   const { readable, writable } = new TransformStream();

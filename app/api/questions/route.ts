@@ -11,7 +11,10 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user || !session.user.name) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
     }
 
     const userName = session.user.name;
@@ -21,14 +24,14 @@ export async function GET(request: NextRequest) {
     const result = await client.query(
       `
       SELECT 
-        q.id::TEXT, 
+        q.id, 
         q.name, 
         q.description, 
         q.difficulty, 
         COALESCE(uc.completed, false) AS completed
       FROM questions q
       LEFT JOIN user_challenge_completions uc
-        ON q.id::TEXT = uc.question_id AND uc.user_name = $1
+        ON q.id = uc.question_id AND uc.user_name = $1
       ORDER BY q.id ASC
       `,
       [userName]
@@ -37,7 +40,7 @@ export async function GET(request: NextRequest) {
     client.release();
 
     const questions: Question[] = result.rows.map((q) => ({
-      id: q.id,
+      id: q.id.toString(), // Convert id to string if needed
       name: q.name,
       description: q.description,
       difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
@@ -47,7 +50,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(questions, { status: 200 });
   } catch (error) {
     console.error('Error fetching questions:', error);
-    return NextResponse.json({ error: 'Failed to fetch questions.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch questions.' },
+      { status: 500 }
+    );
   }
 }
 
@@ -57,12 +63,18 @@ export async function POST(request: NextRequest) {
   const { questionName, description, difficulty, answer } = body;
 
   if (!questionName || !description || !difficulty || !answer) {
-    return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'All fields are required.' },
+      { status: 400 }
+    );
   }
 
   // Validate 'difficulty' value
   if (!['easy', 'medium', 'hard'].includes(difficulty.toLowerCase())) {
-    return NextResponse.json({ error: 'Invalid difficulty level.' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'Invalid difficulty level.' },
+      { status: 400 }
+    );
   }
 
   try {
@@ -74,16 +86,22 @@ export async function POST(request: NextRequest) {
     client.release();
 
     const newQuestion: Question = {
-      id: result.rows[0].id.toString(),
+      id: result.rows[0].id.toString(), // Convert id to string if needed
       name: result.rows[0].name,
       description: result.rows[0].description,
-      difficulty: result.rows[0].difficulty as 'easy' | 'medium' | 'hard',
+      difficulty: result.rows[0].difficulty as
+        | 'easy'
+        | 'medium'
+        | 'hard',
       completed: false, // New questions are not completed by default
     };
 
     return NextResponse.json({ question: newQuestion }, { status: 201 });
   } catch (error) {
     console.error('Error inserting question:', error);
-    return NextResponse.json({ error: 'Failed to insert question.' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to insert question.' },
+      { status: 500 }
+    );
   }
 }
