@@ -1,5 +1,3 @@
-// app/auth/signin/page.tsx
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,17 +6,17 @@ import { useRouter } from 'next/navigation';
 import { FaArrowRight } from 'react-icons/fa';
 
 export default function SignIn() {
-  const { data: session, status } = useSession();
+  const { status } = useSession();
   const router = useRouter();
   const [command, setCommand] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
-  // Handle authentication status
+  // Redirect the user to the home page if authenticated
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/'); // Redirect to home page if the user is authenticated
+      router.push('/'); // Redirect to home page if authenticated
     }
   }, [status, router]);
 

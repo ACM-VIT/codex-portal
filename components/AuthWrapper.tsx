@@ -13,7 +13,8 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      // Trigger signIn to redirect unauthenticated users, but don't immediately render the page
+      // Trigger signIn to redirect unauthenticated users
+      // Ensure signIn only gets called once and avoids unnecessary rendering
       signIn(); 
     }
   }, [status]);
@@ -23,12 +24,12 @@ const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
     return <LoadingScreen />;
   }
 
-  // If the user is authenticated, render the children
+  // If authenticated, render children
   if (status === 'authenticated') {
     return <>{children}</>;
   }
 
-  // Render nothing while redirecting to avoid the loop
+  // If unauthenticated, don't render anything until redirected
   return null;
 };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useSession, signIn } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import ChallengeTerminal from "../components/ChallengeTerminal";
 import Leaderboard from "../components/Leaderboard";
@@ -33,14 +33,13 @@ interface Question {
 }
 
 export default function Home() {
-  const { data: session, status } = useSession();
+  const { data: session, status } = useSession(); // <-- Destructure session and status from useSession
   const router = useRouter();
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const { data: questions, error: questionsError, mutate: mutateQuestions } = useSWR<Question[]>(
-    session ? "/api/questions" : null,
-    fetcher
+    "/api/questions", fetcher
   );
   const { data: leaderboard, error: leaderboardError } = useSWR<LeaderboardEntry[]>("/api/leaderboard", fetcher);
 
@@ -54,9 +53,7 @@ export default function Home() {
     [questions, selectedQuestion]
   );
 
-  // Remove redundant session checks and redirects
-  // AuthWrapper already handles redirection if not authenticated
-
+  // Function to stop showing the loading screen after the set duration
   const handleLoadingComplete = () => {
     setIsLoading(false);
   };
@@ -69,6 +66,7 @@ export default function Home() {
     );
   };
 
+  // Show loading screen if still loading session data or questions
   if (isLoading || status === "loading") {
     return <LoadingScreen duration={3000} onComplete={handleLoadingComplete} />;
   }
@@ -117,7 +115,7 @@ export default function Home() {
           <ChallengeTerminal
             question={selectedQuestion}
             onComplete={handleChallengeCompletion}
-            userName={session?.user?.name?.split(" ")[0] || "Hacker"}
+            userName={session?.user?.name?.split(" ")[0] || "Hacker"} // <-- Correctly access session data here
             questions={questions}
           />
         </div>
