@@ -1,9 +1,8 @@
-"use client"
+'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/Card'
 import ScrollArea from '@/components/ui/ScrollArea'
-import { Input } from '@/components/ui/Input'
 import { toast } from 'react-toastify'
 
 interface ChallengeProps {
@@ -25,37 +24,31 @@ interface ChallengeProps {
   }[]
 }
 
-export default function ChallengeTerminal({ question, onComplete, userName, questions }: ChallengeProps) {
-  const [userInput, setUserInput] = useState('')
+export default function ChallengeTerminal({
+  question,
+  onComplete,
+  userName,
+  questions,
+}: ChallengeProps) {
   const [terminalOutput, setTerminalOutput] = useState<string[]>([])
-  const [currentPath, setCurrentPath] = useState('/home/' + userName)
+  const [currentPath, setCurrentPath] = useState(`/home/${userName}`)
+  const [previousPath, setPreviousPath] = useState('')  // Store the previous path for 'cd -'
+  const [inputValue, setInputValue] = useState('')
+  const [commandHistory, setCommandHistory] = useState<string[]>([])
+  const [historyIndex, setHistoryIndex] = useState(-1)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
-  
-  // Ref to track if the terminal sequence has started
+  const inputRef = useRef<HTMLInputElement>(null)
   const hasStartedRef = useRef(false)
 
-  useEffect(() => {
-    if (!hasStartedRef.current) {
-      hasStartedRef.current = true
-      startTerminalSequence()
-    }
+  const isMountedRef = useRef(true)
+
+  const appendToTerminal = useCallback((messages: string[]) => {
+    setTerminalOutput(prev => [...prev, ...messages])
   }, [])
 
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
-    }
-  }, [terminalOutput])
+  const promptString = useCallback(() => `${userName}@codex-cryptum:${currentPath}$ `, [userName, currentPath])
 
-  useEffect(() => {
-    if (question) {
-      const newPath = `/home/${userName}/challenges/${question.difficulty}/${question.name}`
-      setCurrentPath(newPath)
-      setTerminalOutput(prev => [...prev, `Changed directory to ${newPath}`, promptString()])
-    }
-  }, [question, userName])
-
-  const startTerminalSequence = () => {
+  const startTerminalSequence = useCallback(() => {
     const startupMessages = [
       'Initializing Codex Cryptum Terminal...',
       'Loading system modules...',
@@ -63,33 +56,55 @@ export default function ChallengeTerminal({ question, onComplete, userName, ques
       'Authentication complete...',
       `Welcome, ${userName}!`,
       'Type "help" for available commands.',
-      ''
     ]
 
     let index = 0
     const interval = setInterval(() => {
-      setTerminalOutput(prev => [...prev, startupMessages[index]])
-      index++
-      if (index >= startupMessages.length) {
+      if (index < startupMessages.length) {
+        appendToTerminal([startupMessages[index]])
+        index++
+      } else {
         clearInterval(interval)
-        setTerminalOutput(prev => [...prev, promptString()])
       }
     }, 500)
-  }
+  }, [userName, appendToTerminal])
 
-  const promptString = (path: string = currentPath) => `${userName}@codex-cryptum:${path}$ `
+  useEffect(() => {
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true
+      startTerminalSequence()
+    }
 
-  const handleCommand = async (command: string) => {
-    if (!command.trim()) {
-      // If the user presses Enter without typing a command, just append a new prompt
-      setTerminalOutput(prev => [...prev, promptString()])
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [startTerminalSequence])
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+    }
+  }, [terminalOutput])
+
+  // Update directory based on input
+  const updateDirectory = useCallback((newPath: string) => {
+    if (currentPath !== newPath) {
+      setPreviousPath(currentPath)  // Store the current path as previous path
+      setCurrentPath(newPath)
+    }
+  }, [currentPath])
+
+  const handleCommand = useCallback(() => {
+    const command = inputValue.trim()
+    if (!command) {
       return
     }
 
-    const fullCommand = promptString() + command
-    setTerminalOutput(prev => [...prev, fullCommand])
+    setCommandHistory(prev => [command, ...prev])
+    setHistoryIndex(-1)
+    appendToTerminal([`${promptString()}${command}`])
 
-    const [cmd, ...args] = command.trim().split(' ')
+    const [cmd, ...args] = command.split(' ')
 
     switch (cmd.toLowerCase()) {
       case 'help':
@@ -108,26 +123,25 @@ export default function ChallengeTerminal({ question, onComplete, userName, ques
         catFile(args[0])
         break
       case 'clear':
-        setTerminalOutput([])
-        break
+        clearTerminal()
+        return
       case 'info':
         displayInfo()
         break
       case 'answer':
-        await handleAnswer(args)
+        handleAnswer(args)
         break
       case 'exit':
-        setTerminalOutput(prev => [...prev, 'Logout'])
-        break
+        appendToTerminal(['Logout'])
+        return
       default:
-        setTerminalOutput(prev => [...prev, `${cmd}: command not found`, ''])
+        appendToTerminal([`${cmd}: command not found`])
     }
 
-    // Append a new prompt after handling the command
-    setTerminalOutput(prev => [...prev, promptString()])
-  }
+    setInputValue('')
+  }, [inputValue, appendToTerminal, promptString])
 
-  const displayHelp = () => {
+  const displayHelp = useCallback(() => {
     const helpText = [
       'Available commands:',
       '  help    - Show this help message',
@@ -139,40 +153,48 @@ export default function ChallengeTerminal({ question, onComplete, userName, ques
       '  info    - Show challenge info',
       '  answer  - Submit your answer',
       '  exit    - Exit the terminal',
-      '',
     ]
-    setTerminalOutput(prev => [...prev, ...helpText])
-  }
+    appendToTerminal(helpText)
+  }, [appendToTerminal])
 
-  const listDirectory = () => {
+  const listDirectory = useCallback(() => {
     const parts = currentPath.split('/')
     if (parts[3] === 'challenges') {
       if (parts.length === 4) {
-        setTerminalOutput(prev => [...prev, 'easy', 'medium', 'hard', ''])
+        appendToTerminal(['easy', 'medium', 'hard'])
       } else if (parts.length === 5) {
         const difficulty = parts[4]
         const questionNames = questions
           .filter(q => q.difficulty.toLowerCase() === difficulty)
           .map(q => q.name)
-        setTerminalOutput(prev => [...prev, ...questionNames, ''])
+        appendToTerminal(questionNames)
       } else if (parts.length === 6) {
-        setTerminalOutput(prev => [...prev, 'challenge.txt', 'hint.md', ''])
+        appendToTerminal(['challenge.txt', 'hint.md'])
       }
     } else {
-      setTerminalOutput(prev => [...prev, 'challenges', ''])
+      appendToTerminal(['challenges'])
     }
-  }
+  }, [currentPath, questions, appendToTerminal])
 
-  const changeDirectory = (dir: string) => {
-    if (!dir) {
-      setTerminalOutput(prev => [...prev, 'cd: missing operand', ''])
+  const changeDirectory = useCallback((dir: string) => {
+    if (!dir || dir === '~') {
+      // Go to home directory
+      updateDirectory(`/home/${userName}`)
+      return
+    }
+
+    if (dir === '-') {
+      // Go to previous directory
+      if (previousPath) {
+        updateDirectory(previousPath)
+      }
       return
     }
 
     let newPath
     if (dir === '..') {
       newPath = currentPath.split('/').slice(0, -1).join('/')
-      if (newPath === '') newPath = '/home/' + userName
+      if (newPath === '') newPath = `/home/${userName}`
     } else if (dir.startsWith('/')) {
       newPath = dir
     } else {
@@ -180,61 +202,73 @@ export default function ChallengeTerminal({ question, onComplete, userName, ques
     }
 
     const parts = newPath.split('/')
-    if (parts[1] !== 'home' || parts[2] !== userName || 
-        (parts[3] === 'challenges' && parts.length > 6)) {
-      setTerminalOutput(prev => [...prev, `cd: ${dir}: No such file or directory`, ''])
+    if (parts[1] !== 'home' || parts[2] !== userName || (parts[3] && parts[3] !== 'challenges')) {
+      appendToTerminal([`cd: ${dir}: No such file or directory`])
       return
     }
 
-    setCurrentPath(newPath)
-    setTerminalOutput(prev => [...prev, `Changed directory to ${newPath}`])
-  }
+    if (parts[3] === 'challenges') {
+      if (parts[4] && !['easy', 'medium', 'hard'].includes(parts[4])) {
+        appendToTerminal([`cd: ${dir}: No such file or directory`])
+        return
+      }
+      if (parts[5] && !questions.some(q => q.name === parts[5] && q.difficulty.toLowerCase() === parts[4])) {
+        appendToTerminal([`cd: ${dir}: No such file or directory`])
+        return
+      }
+    }
 
-  const printWorkingDirectory = () => {
-    setTerminalOutput(prev => [...prev, currentPath, ''])
-  }
+    updateDirectory(newPath)  // Update without printing "Changed directory"
+  }, [currentPath, userName, questions, appendToTerminal, previousPath, updateDirectory])
 
-  const catFile = (filename: string) => {
+  const printWorkingDirectory = useCallback(() => {
+    appendToTerminal([currentPath])
+  }, [currentPath, appendToTerminal])
+
+  const catFile = useCallback((filename: string) => {
     const parts = currentPath.split('/')
     if (parts.length !== 6 || parts[3] !== 'challenges') {
-      setTerminalOutput(prev => [...prev, `cat: ${filename}: No such file or directory`, ''])
+      appendToTerminal([`cat: ${filename}: No such file or directory`])
       return
     }
 
     const difficulty = parts[4]
     const questionName = parts[5]
-    const currentQuestion = questions.find(q => q.difficulty.toLowerCase() === difficulty && q.name === questionName)
+    const currentQuestion = questions.find(
+      q => q.difficulty.toLowerCase() === difficulty && q.name === questionName
+    )
 
     if (filename === 'challenge.txt' && currentQuestion) {
-      setTerminalOutput(prev => [
-        ...prev,
+      appendToTerminal([
         `Mission: ${currentQuestion.name}`,
         `Difficulty: ${currentQuestion.difficulty}`,
         `Description: ${currentQuestion.description}`,
-        '',
       ])
     } else if (filename === 'hint.md') {
-      setTerminalOutput(prev => [...prev, 'No hints available for this challenge.', ''])
+      appendToTerminal(['No hints available for this challenge.'])
     } else {
-      setTerminalOutput(prev => [...prev, `cat: ${filename}: No such file or directory`, ''])
+      appendToTerminal([`cat: ${filename}: No such file or directory`])
     }
-  }
+  }, [currentPath, questions, appendToTerminal])
 
-  const displayInfo = () => {
+  const clearTerminal = useCallback(() => {
+    setTerminalOutput([])
+    appendToTerminal([promptString()]) // Re-append prompt after clearing
+  }, [appendToTerminal, promptString])
+
+  const displayInfo = useCallback(() => {
     if (question) {
-      setTerminalOutput(prev => [
-        ...prev,
+      appendToTerminal([
         `Mission: ${question.name}`,
         `Difficulty: ${question.difficulty}`,
         `Description: ${question.description}`,
-        '',
       ])
     } else {
-      setTerminalOutput(prev => [...prev, 'No mission selected.', ''])
+      appendToTerminal(['No mission selected.'])
     }
-  }
+  }, [question, appendToTerminal])
 
-  const handleAnswer = async (args: string[]) => {
+  const handleAnswer = useCallback(async (args: string[]) => {
     if (currentPath.includes('/challenges')) {
       await submitAnswer(args.join(' '))
     } else if (args.length >= 2) {
@@ -244,69 +278,83 @@ export default function ChallengeTerminal({ question, onComplete, userName, ques
       if (currentQuestion) {
         await submitAnswer(answer, currentQuestion)
       } else {
-        setTerminalOutput(prev => [...prev, `Question not found: ${questionName}`, ''])
+        appendToTerminal([`Question not found: ${questionName}`])
       }
     } else {
-      setTerminalOutput(prev => [...prev, 'Invalid answer command format.', ''])
+      appendToTerminal(['Invalid answer command format.'])
     }
-  }
+  }, [currentPath, questions, appendToTerminal])
 
-  const submitAnswer = async (answer: string, currentQuestion = question) => {
+  const submitAnswer = useCallback(async (
+    answer: string,
+    currentQuestion = question
+  ) => {
     if (!currentQuestion) {
-      setTerminalOutput(prev => [...prev, 'No mission selected. Navigate to a challenge directory to submit an answer.', ''])
+      appendToTerminal([
+        'No mission selected. Navigate to a challenge directory to submit an answer.',
+      ])
       return
     }
 
-    setTerminalOutput(prev => [...prev, 'Submitting answer...', ''])
+    appendToTerminal(['Submitting answer...'])
     try {
       const res = await fetch('/api/answer', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ questionId: currentQuestion.id, userAnswer: answer }),
+        body: JSON.stringify({
+          questionId: currentQuestion.id,
+          userAnswer: answer,
+        }),
       })
 
       const data = await res.json()
       if (res.ok) {
-        setTerminalOutput(prev => [...prev, 'Access granted. Challenge completed!', ''])
+        appendToTerminal(['Access granted. Challenge completed!'])
         onComplete(currentQuestion.id)
         toast.success('Correct answer! Challenge completed.')
       } else {
-        setTerminalOutput(prev => [...prev, 'Access denied. Incorrect answer. Try again.', ''])
+        appendToTerminal(['Access denied. Incorrect answer. Try again.'])
         toast.error('Incorrect answer.')
       }
     } catch (error) {
-      setTerminalOutput(prev => [...prev, 'Error processing request.', ''])
+      appendToTerminal(['Error processing request.'])
       toast.error('An error occurred.')
     }
-  }
+  }, [question, appendToTerminal, onComplete])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      handleCommand(userInput)
-      setUserInput('')
+      e.preventDefault()
+      handleCommand()
     }
   }
 
   return (
     <Card className="w-full h-full bg-black text-green-500 font-mono border-none outline outline-2 outline-green-500">
       <CardContent className="p-6 flex flex-col h-full justify-between">
-        <ScrollArea className="flex-grow mb-4 rounded h-full" ref={scrollAreaRef}>
-          <div className="p-4 space-y-2 flex flex-col justify-end">
+        <ScrollArea
+          className="flex-grow mb-4 rounded h-full"
+          ref={scrollAreaRef}
+        >
+          <div className="p-4 space-y-2 flex flex-col">
             {terminalOutput.map((line, index) => (
-              <div key={index} className="break-all">
+              <div key={index} className="whitespace-pre-wrap">
                 {line}
               </div>
             ))}
           </div>
         </ScrollArea>
         <div className="flex space-x-2">
-          <Input
+          <span>{promptString()}</span>
+          <input
             type="text"
-            value={userInput}
-            onChange={(e) => setUserInput(e.target.value)}
+            value={inputValue}
+            onChange={e => setInputValue(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="flex-grow bg-black text-green-500 border border-green-500 focus:ring-green-500 focus:border-green-500"
-            placeholder=""
+            ref={inputRef}
+            className="flex-grow bg-black text-green-500 border-none focus:outline-none caret-green-500"
+            autoFocus
+            autoComplete="off"
             aria-label="Terminal command input"
           />
         </div>

@@ -33,3 +33,23 @@
   border-right: 2px solid green;
   animation: blink 1s step-start infinite;
 }
+
+@keyframes blink {
+  0% {
+    border-right-color: green;
+  }
+  49% {
+    border-right-color: green;
+  }
+  50% {
+    border-right-color: transparent;
+  }
+  100% {
+    border-right-color: transparent;
+  }
+}
+
+.blinking-cursor {
+  border-right: 2px solid green;
+  animation: blink 1s step-start infinite;
+}
