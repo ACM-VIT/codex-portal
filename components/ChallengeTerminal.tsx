@@ -86,13 +86,22 @@ export default function ChallengeTerminal({
     }
   }, [terminalOutput])
 
-  // Update directory based on input
+  // Update directory based on input or question selection
   const updateDirectory = useCallback((newPath: string) => {
     if (currentPath !== newPath) {
       setPreviousPath(currentPath)  // Store the current path as previous path
       setCurrentPath(newPath)
     }
   }, [currentPath])
+
+  // Update currentPath when a new question is selected
+  useEffect(() => {
+    if (question) {
+      const newPath = `/home/${userName}/challenges/${question.difficulty.toLowerCase()}/${question.name}`
+      updateDirectory(newPath)
+      appendToTerminal([`Changed directory to ${newPath}`])
+    }
+  }, [question, userName, updateDirectory, appendToTerminal])
 
   const handleCommand = useCallback(() => {
     const command = inputValue.trim()
@@ -180,6 +189,7 @@ export default function ChallengeTerminal({
     if (!dir || dir === '~') {
       // Go to home directory
       updateDirectory(`/home/${userName}`)
+      appendToTerminal([`Changed directory to /home/${userName}`])
       return
     }
 
@@ -187,6 +197,7 @@ export default function ChallengeTerminal({
       // Go to previous directory
       if (previousPath) {
         updateDirectory(previousPath)
+        appendToTerminal([`Changed directory to ${previousPath}`])
       }
       return
     }
@@ -219,6 +230,7 @@ export default function ChallengeTerminal({
     }
 
     updateDirectory(newPath)  // Update without printing "Changed directory"
+    appendToTerminal([`Changed directory to ${newPath}`])
   }, [currentPath, userName, questions, appendToTerminal, previousPath, updateDirectory])
 
   const printWorkingDirectory = useCallback(() => {

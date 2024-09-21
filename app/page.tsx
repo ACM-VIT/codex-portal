@@ -100,8 +100,13 @@ export default function Home() {
           </SelectTrigger>
           <SelectContent className="bg-black border border-green-500 max-h-60 overflow-y-auto">
             {questions?.map((q) => (
-              <SelectItem key={q.id} value={q.id} className="hover:bg-green-700 text-green-500 p-2 cursor-pointer">
-                {q.name} {q.completed ? "✓" : ""}
+              <SelectItem
+                key={q.id}
+                value={q.id}
+                className="hover:bg-green-700 text-green-500 p-2 cursor-pointer"
+              >
+                {q.name} ({q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)})
+                {q.completed ? " ✓" : ""}
               </SelectItem>
             ))}
           </SelectContent>
