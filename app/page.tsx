@@ -1,3 +1,5 @@
+// page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -23,7 +25,8 @@ export default function Home() {
     data: questions,
     error: questionsError,
     mutate: mutateQuestions,
-  } = useSWR<Question[]>("/api/questions", fetcher);
+  } = useSWR<Question[]>(session ? "/api/questions" : null, fetcher);
+
   const { data: leaderboard, error: leaderboardError } = useSWR<LeaderboardEntry[]>(
     "/api/leaderboard",
     fetcher
@@ -41,7 +44,8 @@ export default function Home() {
         ),
       false
     );
-    toast.success("Challenge completed!");
+    // Remove duplicate toast notification
+    // toast.success("Challenge completed!");
   };
 
   const handleAnswerSubmission = async (answer: string) => {
@@ -50,10 +54,15 @@ export default function Home() {
       return;
     }
 
+    if (selectedQuestion.completed) {
+      toast.info("You have already completed this challenge.");
+      return;
+    }
+
     try {
-      const res = await fetch('/api/answer', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/answer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           questionId: selectedQuestion.id,
           userAnswer: answer,
@@ -63,25 +72,31 @@ export default function Home() {
       const data = await res.json();
 
       if (res.ok) {
-        toast.success('Correct answer! Challenge completed.');
+        toast.success("Correct answer! Challenge completed.");
         handleChallengeCompletion(selectedQuestion.id);
       } else {
-        toast.error(data.message || 'Incorrect answer.');
+        toast.error(data.message || "Incorrect answer.");
       }
     } catch (error) {
-      console.error('Error submitting answer:', error);
-      toast.error('An error occurred while submitting your answer.');
+      console.error("Error submitting answer:", error);
+      toast.error("An error occurred while submitting your answer.");
     }
   };
 
   useEffect(() => {
     if (questions && selectedQuestion) {
-      const updatedQuestion = questions.find(q => q.id === selectedQuestion.id);
+      const updatedQuestion = questions.find((q) => q.id === selectedQuestion.id);
       if (updatedQuestion) {
         setSelectedQuestion(updatedQuestion);
       }
     }
   }, [questions, selectedQuestion]);
+
+  useEffect(() => {
+    if (session) {
+      mutateQuestions();
+    }
+  }, [session, mutateQuestions]);
 
   if (isLoading || status === "loading") {
     return <LoadingScreen duration={1500} onComplete={handleLoadingComplete} />;
@@ -108,8 +123,7 @@ export default function Home() {
       {/* Left Side: Leaderboard */}
       <div className="w-full lg:w-1/4 flex flex-col border-r border-gray-700 p-4 overflow-y-hidden bg-gray-800">
         <Leaderboard
-          leaderboard={leaderboard}
-          currentUserName={session?.user?.name || ''}
+          currentUserName={session?.user?.name || ""}
         />
       </div>
 
@@ -117,14 +131,14 @@ export default function Home() {
       <div className="w-full lg:w-1/2 p-4 flex flex-col bg-gray-900">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl md:text-4xl font-bold text-green-500">
-                Codex Cryptum v3.0
+            Codex Cryptum v3.0
           </h2>
           <Button
             variant="ghost"
             onClick={() => setIsTerminalOpen(!isTerminalOpen)}
             className="text-green-500 text-2xl"
           >
-            {isTerminalOpen ? 'X' : '+'}
+            {isTerminalOpen ? "X" : "+"}
           </Button>
         </div>
 
@@ -161,7 +175,6 @@ export default function Home() {
           selectedQuestion={selectedQuestion}
           onSelectQuestion={(question) => {
             setSelectedQuestion(question);
-            toast.info(`Selected question: ${question.name}`);
           }}
         />
       </div>

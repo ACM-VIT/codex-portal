@@ -1,10 +1,11 @@
+// components/QuestionsMenu.tsx
+
 "use client";
 
 import React from "react";
 import { Card, CardContent } from "./ui/Card";
 import ScrollArea from "./ui/ScrollArea";
 import { Question } from "../lib/types";
-import { toast } from "react-toastify";
 
 interface QuestionsMenuProps {
   questions: Question[];
@@ -17,27 +18,28 @@ export default function QuestionsMenu({
   selectedQuestion,
   onSelectQuestion,
 }: QuestionsMenuProps) {
-
   const handleSelect = (question: Question) => {
+    if (question.completed) {
+      // Optionally, show a message or prevent selection
+      return;
+    }
     onSelectQuestion(question);
-    toast.info(`Selected question: ${question.name}`);
   };
 
   return (
     <div className="space-y-4 h-full">
       <h3 className="text-xl font-semibold text-green-500">Available Challenges</h3>
-      {/* Scrollable list with invisible scrollbar */}
       <ScrollArea className="space-y-2 scrollbar-hide h-full">
         {questions.map((q) => (
           <Card
             key={q.id}
             onClick={() => handleSelect(q)}
-            className={`cursor-pointer border ${
+            className={`border ${
               selectedQuestion?.id === q.id
                 ? "border-green-500"
                 : "border-transparent"
             } hover:border-green-500 transition-colors bg-gray-900 text-green-500 ${
-              q.completed ? "bg-opacity-75" : ""
+              q.completed ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
             }`}
           >
             <CardContent className="p-4">

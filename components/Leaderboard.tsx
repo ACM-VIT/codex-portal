@@ -2,15 +2,9 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Card, CardContent } from "./ui/Card";
-import { toast } from "react-toastify";
-import DOMPurify from "dompurify";
 import { LeaderboardEntry } from "../lib/types";
+import DOMPurify from "dompurify";
 import { useSession } from "next-auth/react";
-
-// Function to clean the user name, removing any trailing numbers
-const cleanUserName = (fullName: string): string => {
-  return fullName.replace(/\s*\d+$/, "");
-};
 
 const Loader = () => (
   <div className="flex items-center justify-center h-48">
@@ -19,17 +13,43 @@ const Loader = () => (
 );
 
 interface LeaderboardProps {
-  leaderboard: LeaderboardEntry[];
   currentUserName: string;
 }
 
-export default function Leaderboard({ leaderboard, currentUserName }: LeaderboardProps) {
+export default function Leaderboard({ currentUserName }: LeaderboardProps) {
   const { data: session } = useSession();
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  useEffect(() => {
+    // Create an EventSource to listen to the SSE updates
+    const eventSource = new EventSource("/api/sse-leaderboard");
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      setLeaderboard(data);
+      setLoading(false);
+    };
+
+    eventSource.onerror = (error) => {
+      console.error("Error with SSE connection:", error);
+      eventSource.close();
+    };
+
+    // Cleanup the EventSource on component unmount
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   const userEntry = leaderboard.find(
     (entry) => entry.user_name === session?.user?.name
   );
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -45,16 +65,19 @@ export default function Leaderboard({ leaderboard, currentUserName }: Leaderboar
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-lg font-medium">
-                  {DOMPurify.sanitize(cleanUserName(player.user_name))}
+                  {DOMPurify.sanitize(player.user_name)}
                   {player.user_name === currentUserName ? " (You)" : ""}
                 </h4>
                 <span className="text-sm">Rank: {index + 1}</span>
               </div>
-              <p className="mt-2 text-sm text-gray-300">Score: {player.points}</p>
+              <p className="mt-2 text-sm text-gray-300">
+                Score: {player.points}
+              </p>
             </CardContent>
           </Card>
         ))}
       </div>
+
       {/* Fixed User Entry at the Bottom */}
       {userEntry && (
         <div className="mt-2">
@@ -62,10 +85,13 @@ export default function Leaderboard({ leaderboard, currentUserName }: Leaderboar
             <CardContent className="p-4">
               <div className="flex justify-between items-center">
                 <h4 className="text-lg font-medium">
-                  {DOMPurify.sanitize(cleanUserName(userEntry.user_name))} (You)
+                  {DOMPurify.sanitize(userEntry.user_name)} (You)
                 </h4>
                 <span className="text-sm">
-                  Rank: {leaderboard.findIndex((entry) => entry.user_name === userEntry.user_name) + 1}
+                  Rank:{" "}
+                  {leaderboard.findIndex(
+                    (entry) => entry.user_name === userEntry.user_name
+                  ) + 1}
                 </span>
               </div>
               <p className="mt-2 text-sm text-gray-300">

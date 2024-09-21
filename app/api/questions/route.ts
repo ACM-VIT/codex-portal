@@ -2,21 +2,45 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '../../../lib/db';
-import { Question } from '../../../lib/types'; // Import the Question interface
+import { Question } from '../../../lib/types';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../lib/auth'; // Adjust the import path as needed
 
-// Handle GET and POST requests
 export async function GET(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.name) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userName = session.user.name;
+
     const client = await pool.connect();
-    const result = await client.query('SELECT * FROM questions');
+
+    const result = await client.query(
+      `
+      SELECT 
+        q.id::TEXT, 
+        q.name, 
+        q.description, 
+        q.difficulty, 
+        COALESCE(uc.completed, false) AS completed
+      FROM questions q
+      LEFT JOIN user_challenge_completions uc
+        ON q.id::TEXT = uc.question_id AND uc.user_name = $1
+      ORDER BY q.id ASC
+      `,
+      [userName]
+    );
+
     client.release();
 
-    // Ensure 'difficulty' is one of the allowed values
     const questions: Question[] = result.rows.map((q) => ({
-      id: q.id.toString(), // Assuming 'id' is a number in DB
+      id: q.id,
       name: q.name,
       description: q.description,
-      difficulty: q.difficulty as 'easy' | 'medium' | 'hard', // Type assertion
+      difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
       completed: q.completed,
     }));
 
@@ -49,7 +73,6 @@ export async function POST(request: NextRequest) {
     );
     client.release();
 
-    // Return the inserted question adhering to the Question interface
     const newQuestion: Question = {
       id: result.rows[0].id.toString(),
       name: result.rows[0].name,
