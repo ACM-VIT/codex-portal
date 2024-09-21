@@ -1,65 +1,65 @@
-'use client'; // Ensure this is treated as a client component
+'use client'
 
-import { useState, useEffect } from 'react';
-import ChallengeTerminal from '../components/ChallengeTerminal';
-import Leaderboard from '../components/Leaderboard';
-import { useSession, signIn } from 'next-auth/react';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
-import useSWR from 'swr';
-import { fetcher } from '../lib/fetcher';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select';
+import { useState, useEffect } from 'react'
+import ChallengeTerminal from '../components/ChallengeTerminal'
+import Leaderboard from '../components/Leaderboard'
+import { useSession, signIn } from 'next-auth/react'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
+import useSWR from 'swr'
+import { fetcher } from '../lib/fetcher'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/Select'
 
 interface LeaderboardEntry {
-  user_name: string;
-  points: number;
+  user_name: string
+  points: number
 }
 
 interface Question {
-  id: string;
-  name: string;
-  description: string;
-  difficulty: string;
-  completed: boolean;
+  id: string
+  name: string
+  description: string
+  difficulty: string
+  completed: boolean
 }
 
 export default function Home() {
-  const { data: session, status } = useSession();
-  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null);
+  const { data: session, status } = useSession()
+  const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
 
   const {
     data: questions,
     error: questionsError,
     mutate: mutateQuestions,
-  } = useSWR<Question[]>(session ? '/api/questions' : null, fetcher);
+  } = useSWR<Question[]>(session ? '/api/questions' : null, fetcher)
   const { data: leaderboard, error: leaderboardError } = useSWR<LeaderboardEntry[]>(
     '/api/leaderboard',
     fetcher
-  );
+  )
 
   useEffect(() => {
     if (status === 'loading') {
-      return;
+      return
     }
     if (!session) {
-      signIn();
+      signIn()
     }
-  }, [session, status]);
+  }, [session, status])
 
   const handleChallengeCompletion = (questionId: string) => {
     mutateQuestions(
       (questions) =>
         (questions ?? []).map((q) => (q.id === questionId ? { ...q, completed: true } : q)),
       false
-    );
-  };
+    )
+  }
 
   if (status === 'loading' || !questions || !leaderboard) {
-    return <div>Loading...</div>;
+    return <div>Loading...</div>
   }
 
   if (questionsError || leaderboardError) {
-    return <div>Error loading data.</div>;
+    return <div>Error loading data.</div>
   }
 
   return (
@@ -71,7 +71,7 @@ export default function Home() {
 
       {/* Main content area - Center area with challenge */}
       <div className="w-full lg:w-3/4 p-4 flex flex-col">
-        <h2 className="text-2xl md:text-3xl mb-4">Select your challenge:</h2>
+        <h2 className="text-2xl md:text-3xl mb-4">Codex Cryptum v3.0</h2>
 
         {/* Dropdown for question selection */}
         <Select
@@ -80,7 +80,7 @@ export default function Home() {
           }
         >
           <SelectTrigger className="bg-black border border-green-500 p-2 text-lg text-green-500">
-            <SelectValue placeholder="Choose a challenge" />
+            <SelectValue placeholder="Select a challenge" />
           </SelectTrigger>
           <SelectContent>
             {questions.map((q) => (
@@ -92,17 +92,12 @@ export default function Home() {
         </Select>
 
         {/* Render the challenge terminal */}
-        {selectedQuestion ? (
-          <ChallengeTerminal
-            question={selectedQuestion}
-            onComplete={handleChallengeCompletion}
-            userName={session?.user?.name?.split(' ')[0] || 'Hacker'} // Passing first name of the user
-          />
-        ) : (
-          <div className="bg-black border border-green-500 p-4 rounded-md h-full flex items-center justify-center">
-            <p className="text-4xl sm:text-3xl text-center">Select a challenge to begin hacking.</p>
-          </div>
-        )}
+        <ChallengeTerminal
+          question={selectedQuestion}
+          onComplete={handleChallengeCompletion}
+          userName={session?.user?.name?.split(' ')[0] || 'Hacker'}
+          questions={questions}
+        />
       </div>
 
       <ToastContainer
@@ -117,5 +112,5 @@ export default function Home() {
         toastStyle={{ backgroundColor: 'black', color: 'green' }}
       />
     </div>
-  );
+  )
 }

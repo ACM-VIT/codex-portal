@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
   await sendLeaderboard();
 
-  const interval = setInterval(sendLeaderboard, 5000);
+  const interval = setInterval(sendLeaderboard, 1000);
 
   request.signal.addEventListener('abort', () => {
     clearInterval(interval);

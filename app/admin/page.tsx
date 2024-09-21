@@ -23,17 +23,14 @@ export default function AdminPage() {
   const [questionName, setQuestionName] = useState('');
   const [description, setDescription] = useState('');
   const [difficulty, setDifficulty] = useState('Medium');
-  const [answer, setAnswer] = useState(''); 
+  const [answer, setAnswer] = useState('');
   const [responseMessage, setResponseMessage] = useState('');
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
 
-  // Fetch active questions from the backend
   useEffect(() => {
     const fetchActiveQuestions = async () => {
       try {
-        const res = await fetch('/api/questions', {
-          method: 'GET',
-        });
+        const res = await fetch('/api/questions', { method: 'GET' });
         if (res.ok) {
           const data = await res.json();
           setActiveQuestions(data);
@@ -48,14 +45,13 @@ export default function AdminPage() {
     fetchActiveQuestions();
   }, []);
 
-  // Dark mode effect
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDarkMode);
   }, [isDarkMode]);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin123') { 
+    if (password === 'admin123') {
       setIsAuthenticated(true);
       setErrorMessage('');
     } else {
@@ -63,14 +59,12 @@ export default function AdminPage() {
     }
   };
 
-  const toggleDarkMode = () => {
-    setIsDarkMode((prevMode) => !prevMode);
-  };
+  const toggleDarkMode = () => setIsDarkMode((prevMode) => !prevMode);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setResponseMessage('');
-
+  
     try {
       const res = await fetch('/api/questions', {
         method: 'POST',
@@ -79,31 +73,30 @@ export default function AdminPage() {
           questionName,
           description,
           difficulty,
-          answer, 
+          answer,
         }),
       });
-
-      const data = await res.json();
-      if (res.ok) {
-        setResponseMessage(`Question added: ${data.question.name}`);
-        setQuestionName('');
-        setDescription('');
-        setAnswer(''); 
-        setActiveQuestions([...activeQuestions, { id: data.question.id, name: data.question.name, difficulty, answer }]);
-      } else {
-        throw new Error(data.message);
+  
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || 'Failed to add question.');
       }
+  
+      const data = await res.json(); // This is where the issue may arise if the response is not JSON
+      setResponseMessage(`Question added: ${data.question.name}`);
+      setQuestionName('');
+      setDescription('');
+      setAnswer('');
+      setActiveQuestions([...activeQuestions, data.question]);
     } catch (error: any) {
       setResponseMessage(`Failed to add question: ${error.message}`);
     }
   };
+  
 
   const removeQuestion = async (id: string) => {
     try {
-      const res = await fetch(`/api/questions/${id}`, {
-        method: 'DELETE',
-      });
-
+      const res = await fetch(`/api/questions/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setActiveQuestions((prevQuestions) => prevQuestions.filter((q) => q.id !== id));
       } else {
@@ -136,9 +129,7 @@ export default function AdminPage() {
                 />
               </div>
               {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
-              <Button type="submit" className="w-full">
-                Login
-              </Button>
+              <Button type="submit" className="w-full">Login</Button>
             </form>
           </CardContent>
         </Card>
@@ -153,7 +144,6 @@ export default function AdminPage() {
   return (
     <div className={`min-h-screen p-8 ${isDarkMode ? 'dark' : ''} bg-background text-foreground`}>
       <div className="flex flex-col lg:flex-row gap-8 h-full">
-        {/* Add New Question Card */}
         <Card className="flex-1">
           <CardHeader>
             <CardTitle className="text-2xl font-bold text-center">Add New Question</CardTitle>
@@ -200,9 +190,7 @@ export default function AdminPage() {
                   required
                 />
               </div>
-              <Button type="submit" className="w-full">
-                Submit Question
-              </Button>
+              <Button type="submit" className="w-full">Submit Question</Button>
             </form>
             {responseMessage && (
               <p className={`mt-4 text-sm ${responseMessage.includes('Failed') ? 'text-red-500' : 'text-green-500'}`}>

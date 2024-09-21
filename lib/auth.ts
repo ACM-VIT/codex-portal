@@ -1,6 +1,8 @@
+// lib/auth.ts
+
 import { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
-import pool from './db'; // Assuming your db connection is here
+import pool from './db'; // Ensure this path is correct
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -14,6 +16,14 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
+  pages: {
+    signIn: '/auth/signin', // Specify the custom sign-in page path
+    // You can add other custom pages here if needed
+    // signOut: '/auth/signout',
+    // error: '/auth/error', // Error code passed in query string as ?error=
+    // verifyRequest: '/auth/verify-request', // (used for check email message)
+    // newUser: '/auth/new-user', // New users will be directed here on first sign in
+  },
   callbacks: {
     async signIn({ user }) {
       // Only allow users with @vitstudent.ac.in email

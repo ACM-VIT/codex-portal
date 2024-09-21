@@ -1,39 +1,41 @@
+// app/api/questions/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '../../../lib/db';
-import { getToken } from 'next-auth/jwt';
+import pool from '../../../lib/db'; // Ensure your DB pool is properly set up
 
-export const dynamic = 'force-dynamic';
-
-export async function GET(req: NextRequest) {
-  // Use req.cookies for the getToken function
-  const token = await getToken({ req });
-
-  if (!token) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-
-  const userName = token.name;
-
+// Handle GET and POST requests
+export async function GET(request: NextRequest) {
   try {
-    const questionsResult = await pool.query(
-      'SELECT id, name, description, difficulty FROM questions ORDER BY id ASC'
-    );
-    const questions = questionsResult.rows;
+    const client = await pool.connect();
+    const result = await client.query('SELECT * FROM questions');
+    client.release();
 
-    const completionsResult = await pool.query(
-      'SELECT question_id FROM user_challenge_completions WHERE user_name = $1 AND completed = true',
-      [userName]
-    );
-    const completedQuestionIds = completionsResult.rows.map((row) => row.question_id);
-
-    const questionsWithCompletion = questions.map((q) => ({
-      ...q,
-      completed: completedQuestionIds.includes(q.id),
-    }));
-
-    return NextResponse.json(questionsWithCompletion);
+    return NextResponse.json(result.rows, { status: 200 });
   } catch (error) {
     console.error('Error fetching questions:', error);
-    return NextResponse.json({ message: 'Failed to fetch questions', error }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to fetch questions.' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+
+  const { questionName, description, difficulty, answer } = body;
+
+  if (!questionName || !description || !difficulty || !answer) {
+    return NextResponse.json({ error: 'All fields are required.' }, { status: 400 });
+  }
+
+  try {
+    const client = await pool.connect();
+    const result = await client.query(
+      `INSERT INTO questions (name, description, difficulty, answer) VALUES ($1, $2, $3, $4) RETURNING *`,
+      [questionName, description, difficulty, answer]
+    );
+    client.release();
+
+    return NextResponse.json({ question: result.rows[0] }, { status: 201 });
+  } catch (error) {
+    console.error('Error inserting question:', error);
+    return NextResponse.json({ error: 'Failed to insert question.' }, { status: 500 });
   }
 }
