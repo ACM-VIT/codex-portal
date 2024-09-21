@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
@@ -13,10 +13,9 @@ export default function SignIn() {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
-  // Redirect the user to the home page if authenticated
   useEffect(() => {
     if (status === 'authenticated') {
-      router.push('/'); // Redirect to home page if authenticated
+      router.push('/');
     }
   }, [status, router]);
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useSession, signIn } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
-import LoadingScreen from './LoadingScreen'; // Adjust the path if necessary
+import LoadingScreen from './LoadingScreen';
 
 interface AuthWrapperProps {
   children: React.ReactNode;
@@ -10,26 +11,23 @@ interface AuthWrapperProps {
 
 const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
   const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      // Trigger signIn to redirect unauthenticated users
-      // Ensure signIn only gets called once and avoids unnecessary rendering
-      signIn(); 
+    if (status === 'unauthenticated' && pathname !== '/auth/signin') {
+      router.push('/auth/signin');
     }
-  }, [status]);
+  }, [status, router, pathname]);
 
-  // Show loading while checking authentication status
   if (status === 'loading') {
     return <LoadingScreen />;
   }
 
-  // If authenticated, render children
-  if (status === 'authenticated') {
+  if (status === 'authenticated' || pathname === '/auth/signin') {
     return <>{children}</>;
   }
 
-  // If unauthenticated, don't render anything until redirected
   return null;
 };
 
