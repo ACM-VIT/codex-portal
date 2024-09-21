@@ -64,9 +64,11 @@ export default function SignIn() {
     setHistoryIndex(-1);
 
     if (trimmedCommand === 'signin') {
-      signIn('google'); 
+      signIn('google');
     } else if (trimmedCommand === 'help') {
-      setFeedback("Available commands:\n- signin: Sign in to your account\n- help: Show this help message");
+      setFeedback(
+        "Available commands:\n- signin: Sign in to your account\n- help: Show this help message"
+      );
     } else {
       setFeedback(`Command not found: ${command}`);
     }
@@ -75,30 +77,96 @@ export default function SignIn() {
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-black text-green-500 font-mono px-4">
-      <div className="w-full max-w-md p-8 bg-black border border-green-500 rounded">
-        <div className="mb-6">
-          <pre>Welcome to Codex Cryptum</pre>
+    <div className="relative h-screen bg-black text-green-500 font-mono overflow-hidden">
+      {/* Background circles */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <div className="circle-grid">
+          {/* Creating grid of animated circles */}
+          {[...Array(300)].map((_, i) => (
+            <img
+              key={i}
+              src="/images/cx.png"
+              alt="circle"
+              className={`circle-animation animation-delay-${Math.floor(i / 20)}`}
+              style={{ width: '50px', height: '50px' }}
+            />
+          ))}
         </div>
-        <div className="flex items-center mb-4">
-          <span className="mr-2">{'>'}</span>
-          <input
-            type="text"
-            value={command}
-            onChange={(e) => setCommand(e.target.value)}
-            onKeyDown={handleKeyDown}
-            autoFocus
-            className="flex-grow bg-black text-green-500 focus:outline-none border-none"
-            placeholder="Type 'signin' and press Enter"
-          />
-          <FaArrowRight className="ml-2" />
-        </div>
-        {feedback && (
-          <pre className="whitespace-pre-wrap bg-black text-green-500 p-2 rounded">
-            {feedback}
-          </pre>
-        )}
       </div>
+
+      {/* Sign-in components */}
+      <div className="flex items-center justify-center h-full z-10 relative">
+        <div className="w-full max-w-md p-8 bg-black border border-green-500 rounded">
+          <div className="mb-6">
+            <pre>Welcome to Codex Cryptum</pre>
+          </div>
+          <div className="flex items-center mb-4">
+            <span className="mr-2">{'>'}</span>
+            <input
+              type="text"
+              value={command}
+              onChange={(e) => setCommand(e.target.value)}
+              onKeyDown={handleKeyDown}
+              autoFocus
+              className="flex-grow bg-black text-green-500 focus:outline-none border-none"
+              placeholder="Type 'signin' and press Enter"
+            />
+            <FaArrowRight className="ml-2" />
+          </div>
+          {feedback && (
+            <pre className="whitespace-pre-wrap bg-black text-green-500 p-2 rounded">
+              {feedback}
+            </pre>
+          )}
+        </div>
+      </div>
+
+      {/* CSS-in-JS Styles */}
+      <style jsx>{`
+        .circle-grid {
+          position: absolute;
+          bottom: 0;
+          display: flex;
+          flex-wrap: wrap;
+          width: 100%;
+          height: 100%;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .circle-grid img {
+          flex: 0 0 50px;
+          height: 50px;
+          object-fit: cover;
+          filter: blur(2px); /* Slight blur to create watermark effect */
+        }
+
+        .circle-animation {
+          opacity: 0;
+          transform: translateY(100vh);
+          animation: rise-up 8s ease-in-out forwards; /* Slower animation for a calm effect */
+          filter: opacity(40%); /* Set opacity for watermark effect */
+        }
+
+        @keyframes rise-up {
+          0% {
+            opacity: 0;
+            transform: translateY(100vh);
+          }
+          50% {
+            opacity: 0.2; /* Keep opacity lower for watermark */
+          }
+          100% {
+            opacity: 0.4; /* Final subtle opacity */
+            transform: translateY(0);
+          }
+        }
+
+        /* Staggered animation delays for each row */
+        ${[...Array(20)]
+          .map((_, i) => `.animation-delay-${i} { animation-delay: ${i * 0.3}s; }`)
+          .join(' ')}
+      `}</style>
     </div>
   );
 }
