@@ -12,7 +12,7 @@ let pool: Pool;
 if (!global._pool) {
   pool = new Pool({
     connectionString: process.env.DATABASE_URL,
-    max: 20, // Adjust this number as needed
+    max: 200, // Adjust this number as needed
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
   });
