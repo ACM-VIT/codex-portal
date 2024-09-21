@@ -1,32 +1,35 @@
-'use client'
+'use client';
 
-import { useSession, signIn } from 'next-auth/react'
-import { useEffect } from 'react'
-import LoadingScreen from './LoadingScreen' // Adjust the path as needed
+import { useSession, signIn } from 'next-auth/react';
+import { useEffect } from 'react';
+import LoadingScreen from './LoadingScreen'; // Adjust the path if necessary
 
 interface AuthWrapperProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 const AuthWrapper: React.FC<AuthWrapperProps> = ({ children }) => {
-  const { data: session, status } = useSession()
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      signIn() // Redirects to the sign-in page
+      // Trigger signIn to redirect unauthenticated users, but don't immediately render the page
+      signIn(); 
     }
-  }, [status])
+  }, [status]);
 
+  // Show loading while checking authentication status
   if (status === 'loading') {
-    return <LoadingScreen />
+    return <LoadingScreen />;
   }
 
+  // If the user is authenticated, render the children
   if (status === 'authenticated') {
-    return <>{children}</>
+    return <>{children}</>;
   }
 
-  // While redirecting, don't render anything
-  return null
-}
+  // Render nothing while redirecting to avoid the loop
+  return null;
+};
 
-export default AuthWrapper
+export default AuthWrapper;
