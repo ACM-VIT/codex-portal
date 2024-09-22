@@ -116,3 +116,8 @@
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+.question-description a {
+  color: #3b82f6; /* Blue color */
+  text-decoration: underline; /* Always underline links */
+}

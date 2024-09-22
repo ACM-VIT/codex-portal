@@ -311,13 +311,13 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* Right Side: Submissions */}
-      <div className="w-full lg:w-1/4 flex flex-col border-l border-gray-700 p-4 bg-gray-800">
+{/* Right Side: Submissions */}
+<div className="w-full lg:w-1/4 flex flex-col border-l border-gray-700 p-4 bg-gray-800 h-full">
   <Card className="bg-gray-800 text-green-500 h-full">
     <CardHeader>
       <CardTitle className="text-xl font-bold">Submissions</CardTitle>
     </CardHeader>
-    <CardContent className="flex-grow overflow-y-auto max-h-[100vh]"> {/* Add max-h and overflow */}
+    <CardContent className="flex-grow overflow-y-auto max-h-full"> {/* Updated: max-h-full ensures container won't overflow */}
       <ul className="space-y-2">
         {submissions.map((submission) => (
           <li key={submission.id} className="p-2 bg-gray-700 rounded-md">

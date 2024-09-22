@@ -6,7 +6,7 @@ import { Card, CardContent } from "./ui/Card";
 import { Input } from "./ui/Input";
 import { toast } from "react-toastify";
 import { Question } from "../lib/types";
-import DOMPurify from 'dompurify';
+import DOMPurify from "dompurify";
 
 interface QuestionBoxProps {
   question: Question;
@@ -65,10 +65,15 @@ export default function QuestionBox({ question, onSubmitAnswer }: QuestionBoxPro
         <h2 className="text-3xl font-semibold mt-6 mb-6 text-green-500">
           Question: {question.name}
         </h2>
-        {/* Description with clickable links */}
+        {/* Description with clickable links, line breaks, and underlined links */}
         <div
-          className="text-lg text-gray-300 mb-6"
-          dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(question.description) }}
+          className="text-lg text-gray-300 mb-6 whitespace-pre-wrap question-description"
+          dangerouslySetInnerHTML={{
+            __html: DOMPurify.sanitize(question.description, {
+              ADD_TAGS: ["a", "br"], // Allow <a> and <br> tags for clickable links and line breaks
+              ADD_ATTR: ["href", "target", "rel"], // Allow necessary attributes for links
+            }),
+          }}
         ></div>
       </CardContent>
       {/* Answer Input and Submit Button */}
