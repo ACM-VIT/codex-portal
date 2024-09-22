@@ -23,42 +23,40 @@ export default function Leaderboard({ currentUserName }: LeaderboardProps) {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    // Initialize EventSource to listen to SSE updates
-    const eventSource = new EventSource("/api/sse-leaderboard");
-    eventSourceRef.current = eventSource;
+    // Function to connect to SSE
+    const connectSSE = () => {
+      const eventSource = new EventSource("/api/sse-leaderboard");
+      eventSourceRef.current = eventSource;
 
-    // Clear loading if no data is received in 10 seconds
-    const timeoutId = setTimeout(() => {
-      if (loading) {
-        console.error("Timeout: No data received after 10 seconds");
-        setLoading(false);
-      }
-    }, 10000); // 10 seconds timeout
+      // Receive and update leaderboard data
+      eventSource.onmessage = (event) => {
+        console.log("Received data:", event.data); // Debug log
+        const data = JSON.parse(event.data);
+        setLeaderboard(data);
+        setLoading(false); // Data received, stop loading
+      };
 
-    // Handle incoming leaderboard updates
-    eventSource.onmessage = (event) => {
-      console.log("Received data:", event.data); // Debug log
-      const data = JSON.parse(event.data);
-      setLeaderboard(data);
-      setLoading(false); // Data received, stop loading
-      clearTimeout(timeoutId); // Clear the timeout
+      // Handle connection errors and reconnect
+      eventSource.onerror = (error) => {
+        console.error("Error with SSE connection:", error);
+        eventSource.close();
+
+        // Attempt to reconnect after 5 seconds if connection fails
+        setTimeout(() => {
+          connectSSE();
+        }, 5000);
+      };
     };
 
-    // Handle connection errors
-    eventSource.onerror = (error) => {
-      console.error("Error with SSE connection:", error);
-      eventSource.close();
-      setLoading(false); // Stop loading if error occurs
-    };
+    // Initial connection
+    connectSSE();
 
     // Cleanup on component unmount
     return () => {
-      eventSource.close();
-      clearTimeout(timeoutId);
+      eventSourceRef.current?.close();
     };
-  }, [loading]);
+  }, []);
 
-  // Find current user's entry
   const userEntry = leaderboard.find(
     (entry) => entry.user_name === session?.user?.name
   );

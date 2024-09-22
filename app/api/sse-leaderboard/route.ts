@@ -1,5 +1,3 @@
-// app/api/sse-leaderboard/route.ts
-
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -8,7 +6,6 @@ import pool from '../../../lib/db';
 declare global {
   var leaderboardData: any[];
   var leaderboardClients: Set<WritableStreamDefaultWriter<any>>;
-  var leaderboardUpdating: boolean;
   var leaderboardInterval: NodeJS.Timeout | undefined;
 }
 
@@ -20,14 +17,7 @@ if (!globalThis.leaderboardData) {
   globalThis.leaderboardData = [];
 }
 
-if (typeof globalThis.leaderboardUpdating !== 'boolean') {
-  globalThis.leaderboardUpdating = false;
-}
-
 async function updateLeaderboardData() {
-  if (globalThis.leaderboardUpdating) return;
-  globalThis.leaderboardUpdating = true;
-
   try {
     const client = await pool.connect();
     try {
@@ -39,33 +29,36 @@ async function updateLeaderboardData() {
 
       console.log('Broadcasting leaderboard data:', payload);
 
+      // Broadcast to all connected clients
       globalThis.leaderboardClients.forEach((clientWriter) => {
-        clientWriter.write(payload);
+        clientWriter.write(payload).catch((err) => {
+          console.error("Error writing to client:", err);
+        });
       });
     } finally {
       client.release();
     }
   } catch (error) {
     console.error('Error updating leaderboard data:', error);
-  } finally {
-    globalThis.leaderboardUpdating = false;
   }
 }
 
+// Ensure leaderboard data is updated every 5 seconds
 if (!globalThis.leaderboardInterval) {
-  globalThis.leaderboardInterval = setInterval(updateLeaderboardData, 5000);
+  globalThis.leaderboardInterval = setInterval(updateLeaderboardData, 1000);
 }
 
 export async function GET(request: NextRequest) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
 
-  // Send initial data if available
+  // Send initial data immediately
   if (globalThis.leaderboardData.length > 0) {
     const payload = `data: ${JSON.stringify(globalThis.leaderboardData)}\n\n`;
     writer.write(payload);
   }
 
+  // Add new client
   globalThis.leaderboardClients.add(writer);
   console.log(
     'New client connected. Total clients:',
