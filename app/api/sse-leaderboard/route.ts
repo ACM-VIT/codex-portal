@@ -32,7 +32,7 @@ async function updateLeaderboardData() {
     const client = await pool.connect();
     try {
       const res = await client.query(
-        'SELECT user_name, points FROM leaderboard ORDER BY points DESC LIMIT 10'
+        'SELECT user_name, points FROM leaderboard ORDER BY points DESC'
       );
       globalThis.leaderboardData = res.rows;
       const payload = `data: ${JSON.stringify(globalThis.leaderboardData)}\n\n`;

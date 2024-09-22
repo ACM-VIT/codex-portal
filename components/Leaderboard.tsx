@@ -32,7 +32,7 @@ export default function Leaderboard({ currentUserName }: LeaderboardProps) {
         console.error("Timeout: No data received after 10 seconds");
         setLoading(false); // stop loading
       }
-    }, 10000); // 10 seconds
+    }, 1000); // 10 seconds
 
     eventSource.onmessage = (event) => {
       console.log("Received data:", event.data); // Debug log
