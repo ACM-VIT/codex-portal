@@ -66,7 +66,9 @@ export default function Leaderboard({ currentUserName }: LeaderboardProps) {
   return (
     <div className="flex flex-col h-full">
       <h3 className="text-xl font-semibold text-green-500 mb-4">Leaderboard</h3>
-      <div className="flex-1 no-scrollbar overflow-y-auto space-y-2">
+      
+      {/* Scrollable list of all leaderboard entries */}
+      <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
         {leaderboard.map((player, index) => (
           <Card
             key={`${player.user_name}-${player.points}-${index}`}

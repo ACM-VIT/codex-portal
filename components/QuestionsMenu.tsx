@@ -57,9 +57,6 @@ export default function QuestionsMenu({
                   {q.difficulty.charAt(0).toUpperCase() + q.difficulty.slice(1)}
                 </span>
               </div>
-              <p className="mt-2 text-sm text-gray-300">
-                {q.description.substring(0, 60)}...
-              </p>
               {q.completed && (
                 <span className="mt-2 inline-block text-green-400 font-semibold">
                   ✓ Completed
