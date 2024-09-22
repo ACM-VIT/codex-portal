@@ -19,7 +19,7 @@ interface Question {
   name: string;
   description: string;
   difficulty: string;
-  answer: string;
+  answer?: string; // Optional answer field
 }
 
 interface Submission {
@@ -37,7 +37,7 @@ export default function AdminPage() {
   const [questionName, setQuestionName] = useState("");
   const [description, setDescription] = useState("");
   const [difficulty, setDifficulty] = useState("Medium");
-  const [answer, setAnswer] = useState("");
+  const [answer, setAnswer] = useState(""); // Only Answer field now
   const [responseMessage, setResponseMessage] = useState("");
   const [activeQuestions, setActiveQuestions] = useState<Question[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
@@ -93,6 +93,12 @@ export default function AdminPage() {
     e.preventDefault();
     setResponseMessage("");
 
+    // Ensure that the answer field is filled
+    if (!answer) {
+      setResponseMessage("The 'Answer' field must be filled.");
+      return;
+    }
+
     try {
       const res = await fetch("/api/questions", {
         method: "POST",
@@ -101,7 +107,7 @@ export default function AdminPage() {
           questionName,
           description,
           difficulty,
-          answer,
+          answer, // Answer is mandatory
         }),
       });
 
@@ -123,11 +129,9 @@ export default function AdminPage() {
 
   const handleDeleteConfirmation = (id: string) => {
     if (deleteConfirmationId === id) {
-      // If already clicked once, proceed to delete
       removeQuestion(id);
       setDeleteConfirmationId(null);
     } else {
-      // Set the id to prompt confirmation
       setDeleteConfirmationId(id);
     }
   };
@@ -278,11 +282,12 @@ export default function AdminPage() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="answer">Answer</Label>
+                  <Label htmlFor="answer">Answer (Exact or Regex Pattern)</Label>
                   <Input
                     id="answer"
                     value={answer}
                     onChange={(e) => setAnswer(e.target.value)}
+                    placeholder="Exact answer or regex pattern"
                     required
                   />
                 </div>
@@ -307,46 +312,39 @@ export default function AdminPage() {
       </div>
 
       {/* Right Side: Submissions */}
-      <div className="w-full lg:w-1/4 flex flex-col border-l border-gray-700 p-4 overflow-y-auto bg-gray-800">
-        <Card className="bg-gray-800 text-green-500 h-full">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold">Submissions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ul className="space-y-2 overflow-y-auto h-full">
-              {submissions.map((submission) => (
-                <li
-                  key={submission.id}
-                  className="p-2 bg-gray-700 rounded-md"
-                >
-                  <div className="flex justify-between">
-                    <span className="font-semibold">{submission.userName}</span>
-                    <span className="text-sm text-gray-400">
-                      {new Date(submission.timestamp).toLocaleString()}
-                    </span>
-                  </div>
-                  <div className="mt-1">
-                    <span className="text-sm">
-                      Question: {submission.questionName}
-                    </span>
-                  </div>
-                  <div className="mt-1">
-                    <span
-                      className={`text-sm font-semibold ${
-                        submission.status === "Completed"
-                          ? "text-green-400"
-                          : "text-red-400"
-                      }`}
-                    >
-                      {submission.status}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      </div>
+      <div className="w-full lg:w-1/4 flex flex-col border-l border-gray-700 p-4 bg-gray-800">
+  <Card className="bg-gray-800 text-green-500 h-full">
+    <CardHeader>
+      <CardTitle className="text-xl font-bold">Submissions</CardTitle>
+    </CardHeader>
+    <CardContent className="flex-grow overflow-y-auto max-h-[100vh]"> {/* Add max-h and overflow */}
+      <ul className="space-y-2">
+        {submissions.map((submission) => (
+          <li key={submission.id} className="p-2 bg-gray-700 rounded-md">
+            <div className="flex justify-between">
+              <span className="font-semibold">{submission.userName}</span>
+              <span className="text-sm text-gray-400">
+                {new Date(submission.timestamp).toLocaleString()}
+              </span>
+            </div>
+            <div className="mt-1">
+              <span className="text-sm">Question: {submission.questionName}</span>
+            </div>
+            <div className="mt-1">
+              <span
+                className={`text-sm font-semibold ${
+                  submission.status === "Completed" ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {submission.status}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </CardContent>
+  </Card>
+</div>
     </div>
   );
 }

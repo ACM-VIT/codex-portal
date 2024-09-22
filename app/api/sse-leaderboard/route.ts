@@ -1,63 +1,86 @@
+// app/api/sse-leaderboard/route.ts
+
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '../../../lib/db';
 
 declare global {
-  var broadcastLeaderboard: (() => Promise<void>) | undefined;
+  var leaderboardData: any[];
+  var leaderboardClients: Set<WritableStreamDefaultWriter<any>>;
+  var leaderboardUpdating: boolean;
   var leaderboardInterval: NodeJS.Timeout | undefined;
 }
 
-let clients: Array<WritableStreamDefaultWriter<any>> = [];
+if (!globalThis.leaderboardClients) {
+  globalThis.leaderboardClients = new Set();
+}
 
-// Function to broadcast leaderboard data to all clients
-if (!global.broadcastLeaderboard) {
-  global.broadcastLeaderboard = async () => {
-    let client;
+if (!globalThis.leaderboardData) {
+  globalThis.leaderboardData = [];
+}
+
+if (typeof globalThis.leaderboardUpdating !== 'boolean') {
+  globalThis.leaderboardUpdating = false;
+}
+
+async function updateLeaderboardData() {
+  if (globalThis.leaderboardUpdating) return;
+  globalThis.leaderboardUpdating = true;
+
+  try {
+    const client = await pool.connect();
     try {
-      client = await pool.connect();
       const res = await client.query(
         'SELECT user_name, points FROM leaderboard ORDER BY points DESC LIMIT 10'
       );
-      const data = res.rows;
-      const payload = `data: ${JSON.stringify(data)}\n\n`;
+      globalThis.leaderboardData = res.rows;
+      const payload = `data: ${JSON.stringify(globalThis.leaderboardData)}\n\n`;
 
-      console.log("Broadcasting leaderboard data:", payload); // Debug log
+      console.log('Broadcasting leaderboard data:', payload);
 
-      // Send the leaderboard update to all connected clients
-      clients.forEach((client) => {
-        client.write(payload);
+      globalThis.leaderboardClients.forEach((clientWriter) => {
+        clientWriter.write(payload);
       });
-    } catch (error) {
-      console.error('Error broadcasting leaderboard data:', error);
     } finally {
-      if (client) {
-        client.release();
-      }
+      client.release();
     }
-  };
+  } catch (error) {
+    console.error('Error updating leaderboard data:', error);
+  } finally {
+    globalThis.leaderboardUpdating = false;
+  }
+}
 
-  // Start the interval to broadcast leaderboard updates
-  global.leaderboardInterval = setInterval(global.broadcastLeaderboard, 5000);
+if (!globalThis.leaderboardInterval) {
+  globalThis.leaderboardInterval = setInterval(updateLeaderboardData, 5000);
 }
 
 export async function GET(request: NextRequest) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
 
-  // Store the client writer to send updates later
-  clients.push(writer);
+  // Send initial data if available
+  if (globalThis.leaderboardData.length > 0) {
+    const payload = `data: ${JSON.stringify(globalThis.leaderboardData)}\n\n`;
+    writer.write(payload);
+  }
 
-  console.log("New client connected. Total clients:", clients.length); // Debug log
+  globalThis.leaderboardClients.add(writer);
+  console.log(
+    'New client connected. Total clients:',
+    globalThis.leaderboardClients.size
+  );
 
-  // Clean up when the client disconnects
   request.signal.addEventListener('abort', () => {
-    clients = clients.filter((client) => client !== writer);
+    globalThis.leaderboardClients.delete(writer);
     writer.close();
-    console.log("Client disconnected. Total clients:", clients.length); // Debug log
+    console.log(
+      'Client disconnected. Total clients:',
+      globalThis.leaderboardClients.size
+    );
   });
 
-  // Initial response
   return new NextResponse(readable, {
     headers: {
       'Content-Type': 'text/event-stream',
