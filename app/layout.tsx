@@ -5,6 +5,7 @@ import '../globals.css';
 import { VT323 } from 'next/font/google';
 import SessionProviderWrapper from '../components/SessionProviderWrapper';
 import AuthWrapper from '../components/AuthWrapper';
+import { Analytics } from "@vercel/analytics/react"
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
