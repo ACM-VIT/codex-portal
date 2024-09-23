@@ -2,7 +2,7 @@ export interface Question {
     id: string;
     name: string;
     description: string;
-    difficulty: 'easy' | 'medium' | 'hard'; // Restricting to specific string literals
+    difficulty: 'easy' | 'medium' | 'hard'; 
     completed: boolean;
   }
   

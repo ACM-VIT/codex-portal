@@ -23,35 +23,29 @@ export default function Leaderboard({ currentUserName }: LeaderboardProps) {
   const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    // Function to connect to SSE
     const connectSSE = () => {
       const eventSource = new EventSource("/api/sse-leaderboard");
       eventSourceRef.current = eventSource;
 
-      // Receive and update leaderboard data
       eventSource.onmessage = (event) => {
         console.log("Received data:", event.data); // Debug log
         const data = JSON.parse(event.data);
         setLeaderboard(data);
-        setLoading(false); // Data received, stop loading
+        setLoading(false); 
       };
 
-      // Handle connection errors and reconnect
       eventSource.onerror = (error) => {
         console.error("Error with SSE connection:", error);
         eventSource.close();
 
-        // Attempt to reconnect after 5 seconds if connection fails
         setTimeout(() => {
           connectSSE();
         }, 5000);
       };
     };
 
-    // Initial connection
     connectSSE();
 
-    // Cleanup on component unmount
     return () => {
       eventSourceRef.current?.close();
     };
@@ -94,7 +88,6 @@ export default function Leaderboard({ currentUserName }: LeaderboardProps) {
         ))}
       </div>
 
-      {/* Fixed User Entry at the Bottom */}
       {userEntry && (
         <div className="mt-2">
           <Card className="bg-gray-900 text-green-500 border-none">

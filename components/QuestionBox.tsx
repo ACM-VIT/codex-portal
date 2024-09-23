@@ -50,7 +50,6 @@ export default function QuestionBox({ question, onSubmitAnswer }: QuestionBoxPro
     <Card
       className="h-full flex flex-col justify-between bg-gray-900 text-green-500 relative border border-white overflow-hidden"
     >
-      {/* Watermark */}
       <div
         className="absolute inset-0 opacity-20 pointer-events-none flex items-center justify-center"
       >
@@ -65,13 +64,12 @@ export default function QuestionBox({ question, onSubmitAnswer }: QuestionBoxPro
         <h2 className="text-3xl font-semibold mt-6 mb-6 text-green-500">
           Question: {question.name}
         </h2>
-        {/* Description with clickable links, line breaks, and underlined links */}
         <div
           className="text-lg text-gray-300 mb-6 whitespace-pre-wrap question-description"
           dangerouslySetInnerHTML={{
             __html: DOMPurify.sanitize(question.description, {
-              ADD_TAGS: ["a", "br"], // Allow <a> and <br> tags for clickable links and line breaks
-              ADD_ATTR: ["href", "target", "rel"], // Allow necessary attributes for links
+              ADD_TAGS: ["a", "br"], 
+              ADD_ATTR: ["href", "target", "rel"], 
             }),
           }}
         ></div>

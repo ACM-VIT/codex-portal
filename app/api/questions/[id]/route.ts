@@ -54,19 +54,16 @@ export async function DELETE(
     try {
       await client.query('BEGIN');
 
-      // Delete related entries in user_challenge_completions
       await client.query(
         'DELETE FROM user_challenge_completions WHERE question_id = $1',
         [questionIdInt]
       );
 
-      // Delete related entries in submissions
       await client.query(
         'DELETE FROM submissions WHERE question_id = $1',
         [questionIdInt]
       );
 
-      // Delete the question
       const questionDeletion = await client.query(
         'DELETE FROM questions WHERE id = $1 RETURNING *',
         [questionIdInt]

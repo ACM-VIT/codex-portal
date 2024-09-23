@@ -29,7 +29,6 @@ async function updateLeaderboardData() {
 
       console.log('Broadcasting leaderboard data:', payload);
 
-      // Broadcast to all connected clients
       globalThis.leaderboardClients.forEach((clientWriter) => {
         clientWriter.write(payload).catch((err) => {
           console.error("Error writing to client:", err);
@@ -43,7 +42,6 @@ async function updateLeaderboardData() {
   }
 }
 
-// Ensure leaderboard data is updated every 5 seconds
 if (!globalThis.leaderboardInterval) {
   globalThis.leaderboardInterval = setInterval(updateLeaderboardData, 1000);
 }

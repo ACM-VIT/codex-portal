@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '../../../lib/db';
 import { Question } from '../../../lib/types';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../../lib/auth'; // Adjust the import path as needed
+import { authOptions } from '../../../lib/auth'; 
 
 export async function GET(request: NextRequest) {
   try {
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     client.release();
 
     const questions: Question[] = result.rows.map((q) => ({
-      id: q.id.toString(), // Convert id to string if needed
+      id: q.id.toString(), 
       name: q.name,
       description: q.description,
       difficulty: q.difficulty as 'easy' | 'medium' | 'hard',
@@ -69,7 +69,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate 'difficulty' value
   if (!['easy', 'medium', 'hard'].includes(difficulty.toLowerCase())) {
     return NextResponse.json(
       { error: 'Invalid difficulty level.' },
@@ -86,14 +85,14 @@ export async function POST(request: NextRequest) {
     client.release();
 
     const newQuestion: Question = {
-      id: result.rows[0].id.toString(), // Convert id to string if needed
+      id: result.rows[0].id.toString(), 
       name: result.rows[0].name,
       description: result.rows[0].description,
       difficulty: result.rows[0].difficulty as
         | 'easy'
         | 'medium'
         | 'hard',
-      completed: false, // New questions are not completed by default
+      completed: false, 
     };
 
     return NextResponse.json({ question: newQuestion }, { status: 201 });

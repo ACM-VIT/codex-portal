@@ -20,7 +20,6 @@ export default function QuestionsMenu({
 }: QuestionsMenuProps) {
   const handleSelect = (question: Question) => {
     if (question.completed) {
-      // Optionally, show a message or prevent selection
       return;
     }
     onSelectQuestion(question);

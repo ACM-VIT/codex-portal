@@ -5,21 +5,14 @@ import pool from '../../../lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
 
-/**
- * Escapes special characters in a string to be used in a RegExp.
- * @param string The string to escape.
- * @returns The escaped string.
- */
 function escapeRegExp(string: string): string {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escapes all regex special characters
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Log incoming request
     console.log('Received request to answer route');
 
-    // Authenticate the user
     const session = await getServerSession(authOptions);
 
     if (!session || !session.user || !session.user.name) {
@@ -29,7 +22,6 @@ export async function POST(request: NextRequest) {
 
     console.log(`User authenticated: ${session.user.name}`);
 
-    // Extract and validate request body
     const { questionId, userAnswer } = await request.json();
     console.log(`Received questionId: ${questionId}, userAnswer: ${userAnswer}`);
 
@@ -53,7 +45,6 @@ export async function POST(request: NextRequest) {
     try {
       await client.query('BEGIN');
 
-      // Fetch the question's answer and must_include from the database
       const questionResult = await client.query(
         'SELECT answer, must_include FROM questions WHERE id = $1',
         [questionIdInt]
@@ -73,12 +64,10 @@ export async function POST(request: NextRequest) {
       console.log(`Trimmed user answer: ${trimmedUserAnswer}`);
 
       if (mustInclude) {
-        // Escape any special characters in the mustInclude string
         const escapedMustInclude = escapeRegExp(mustInclude.trim());
         console.log(`Escaped mustInclude: ${escapedMustInclude}`);
 
         if (correctAnswer) {
-          // Combine mustInclude and answer into a single regex
           const fullPattern = `^${escapedMustInclude}${correctAnswer}$`;
           console.log(`Generated regex pattern: ${fullPattern}`);
 
@@ -95,12 +84,10 @@ export async function POST(request: NextRequest) {
             );
           }
         } else {
-          // Only validate against mustInclude if no regex answer is provided
           isCorrect = trimmedUserAnswer.startsWith(mustInclude.trim());
           console.log(`mustInclude match result: ${isCorrect}`);
         }
       } else if (correctAnswer) {
-        // Validate only with the regex answer
         try {
           const regex = new RegExp(`^${correctAnswer}$`);
           isCorrect = regex.test(trimmedUserAnswer);
@@ -114,7 +101,6 @@ export async function POST(request: NextRequest) {
           );
         }
       } else {
-        // No valid answer or mustInclude found
         console.log('No valid answer or mustInclude found');
         await client.query('ROLLBACK');
         return NextResponse.json(
@@ -126,7 +112,6 @@ export async function POST(request: NextRequest) {
       const correctValue = isCorrect ? true : false;
       console.log(`Answer correctness: ${correctValue}`);
 
-      // Record the submission in the database
       await client.query(
         `INSERT INTO submissions (user_name, question_id, correct)
          VALUES ($1, $2, $3)`,
@@ -134,7 +119,6 @@ export async function POST(request: NextRequest) {
       );
 
       if (correctValue) {
-        // Update user_challenge_completions if the answer is correct
         await client.query(
           `INSERT INTO user_challenge_completions (user_name, question_id, completed)
            VALUES ($1, $2, true)
@@ -142,7 +126,6 @@ export async function POST(request: NextRequest) {
           [userName, questionIdInt]
         );
 
-        // Update leaderboard
         await client.query(
           `INSERT INTO leaderboard (user_name, points)
            VALUES ($1, 30)
