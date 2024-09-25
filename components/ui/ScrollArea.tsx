@@ -1,7 +1,9 @@
-'use client'
+// components/ui/ScrollArea.tsx
 
-import { forwardRef } from 'react'
-import { cn } from "@lib/utils"
+"use client";
+
+import { forwardRef } from 'react';
+import { cn } from "@lib/utils";
 
 interface ScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {
   className?: string;
@@ -13,7 +15,7 @@ const ScrollArea = forwardRef<HTMLDivElement, ScrollAreaProps>(
       <div
         ref={ref}
         className={cn(
-          'overflow-y-auto max-h-[500px] p-4', // Adjust height or any other styles accordingly
+          'overflow-y-auto max-h-full p-4 scrollbar-hide', // Added scrollbar-hide class
           className
         )}
         {...props}

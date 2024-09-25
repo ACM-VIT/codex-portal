@@ -1,34 +1,75 @@
-// app/api/sse-leaderboard/route.ts
-
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '../../../lib/db';
 
+declare global {
+  var leaderboardData: any[];
+  var leaderboardClients: Set<WritableStreamDefaultWriter<any>>;
+  var leaderboardInterval: NodeJS.Timeout | undefined;
+}
+
+if (!globalThis.leaderboardClients) {
+  globalThis.leaderboardClients = new Set();
+}
+
+if (!globalThis.leaderboardData) {
+  globalThis.leaderboardData = [];
+}
+
+async function updateLeaderboardData() {
+  try {
+    const client = await pool.connect();
+    try {
+      const res = await client.query(
+        'SELECT user_name, points FROM leaderboard ORDER BY points DESC'
+      );
+      globalThis.leaderboardData = res.rows;
+      const payload = `data: ${JSON.stringify(globalThis.leaderboardData)}\n\n`;
+
+      console.log('Broadcasting leaderboard data:', payload);
+
+      globalThis.leaderboardClients.forEach((clientWriter) => {
+        clientWriter.write(payload).catch((err) => {
+          console.error("Error writing to client:", err);
+        });
+      });
+    } finally {
+      client.release();
+    }
+  } catch (error) {
+    console.error('Error updating leaderboard data:', error);
+  }
+}
+
+if (!globalThis.leaderboardInterval) {
+  globalThis.leaderboardInterval = setInterval(updateLeaderboardData, 1000);
+}
+
 export async function GET(request: NextRequest) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
 
-  const sendLeaderboard = async () => {
-    try {
-      const res = await pool.query('SELECT user_name, points FROM leaderboard ORDER BY points DESC LIMIT 10');
-      const data = res.rows;
-      const payload = `data: ${JSON.stringify(data)}\n\n`;
-      writer.write(payload);
-    } catch (error) {
-      console.error('Error fetching leaderboard data:', error);
-      const payload = `data: ${JSON.stringify({ error: 'Failed to fetch leaderboard data.' })}\n\n`;
-      writer.write(payload);
-    }
-  };
+  // Send initial data immediately
+  if (globalThis.leaderboardData.length > 0) {
+    const payload = `data: ${JSON.stringify(globalThis.leaderboardData)}\n\n`;
+    writer.write(payload);
+  }
 
-  await sendLeaderboard();
-
-  const interval = setInterval(sendLeaderboard, 1000);
+  // Add new client
+  globalThis.leaderboardClients.add(writer);
+  console.log(
+    'New client connected. Total clients:',
+    globalThis.leaderboardClients.size
+  );
 
   request.signal.addEventListener('abort', () => {
-    clearInterval(interval);
+    globalThis.leaderboardClients.delete(writer);
     writer.close();
+    console.log(
+      'Client disconnected. Total clients:',
+      globalThis.leaderboardClients.size
+    );
   });
 
   return new NextResponse(readable, {

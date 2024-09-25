@@ -1,61 +1,161 @@
+// app/api/answer/route.ts
+
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '../../../lib/db';
-import { getToken } from 'next-auth/jwt';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../lib/auth';
 
-export const dynamic = 'force-dynamic';
+function escapeRegExp(string: string): string {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); 
+}
 
-export async function POST(req: NextRequest) {
-  // Get the session token from NextAuth
-  const token = await getToken({ req });
-
-  if (!token) {
-    return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-  }
-
-  const userName = token.name;  // Retrieve the user name from the token
-  const { questionId, userAnswer } = await req.json();
-
+export async function POST(request: NextRequest) {
   try {
-    const userExistsResult = await pool.query(
-      'SELECT * FROM leaderboard WHERE user_name = $1',
-      [userName]
-    );
+    console.log('Received request to answer route');
 
-    if (userExistsResult.rows.length === 0) {
-      await pool.query(
-        'INSERT INTO leaderboard (user_name, points) VALUES ($1, $2)',
-        [userName, 0]
+    const session = await getServerSession(authOptions);
+
+    if (!session || !session.user || !session.user.name) {
+      console.log('Unauthorized access attempt');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    console.log(`User authenticated: ${session.user.name}`);
+
+    const { questionId, userAnswer } = await request.json();
+    console.log(`Received questionId: ${questionId}, userAnswer: ${userAnswer}`);
+
+    if (!questionId || !userAnswer) {
+      console.log('Missing question ID or answer in the request');
+      return NextResponse.json(
+        { error: 'Question ID and answer are required.' },
+        { status: 400 }
       );
     }
 
-    const questionResult = await pool.query(
-      'SELECT answer FROM questions WHERE id = $1',
-      [questionId]
-    );
-
-    if (questionResult.rows.length === 0) {
-      return NextResponse.json({ message: 'Question not found' }, { status: 404 });
+    const questionIdInt = parseInt(questionId, 10);
+    if (isNaN(questionIdInt)) {
+      console.log('Invalid question ID format');
+      return NextResponse.json({ error: 'Invalid question ID.' }, { status: 400 });
     }
 
-    const correctAnswer = questionResult.rows[0].answer;
+    const userName = session.user.name;
+    const client = await pool.connect();
 
-    if (correctAnswer && correctAnswer.toLowerCase() === userAnswer.toLowerCase()) {
-      await pool.query(
-        'INSERT INTO user_challenge_completions (user_name, question_id, completed) VALUES ($1, $2, $3) ON CONFLICT (user_name, question_id) DO UPDATE SET completed = $3',
-        [userName, questionId, true]
+    try {
+      await client.query('BEGIN');
+
+      const questionResult = await client.query(
+        'SELECT answer, must_include FROM questions WHERE id = $1',
+        [questionIdInt]
       );
 
-      await pool.query(
-        'UPDATE leaderboard SET points = points + $1 WHERE user_name = $2',
-        [10, userName]
+      if (questionResult.rowCount === 0) {
+        console.log('Question not found in the database');
+        await client.query('ROLLBACK');
+        return NextResponse.json({ error: 'Question not found.' }, { status: 404 });
+      }
+
+      const { answer: correctAnswer, must_include: mustInclude } = questionResult.rows[0];
+      console.log(`Question data - mustInclude: ${mustInclude}, correctAnswer: ${correctAnswer}`);
+
+      let isCorrect = false;
+      const trimmedUserAnswer = userAnswer.trim();
+      console.log(`Trimmed user answer: ${trimmedUserAnswer}`);
+
+      if (mustInclude) {
+        const escapedMustInclude = escapeRegExp(mustInclude.trim());
+        console.log(`Escaped mustInclude: ${escapedMustInclude}`);
+
+        if (correctAnswer) {
+          const fullPattern = `^${escapedMustInclude}${correctAnswer}$`;
+          console.log(`Generated regex pattern: ${fullPattern}`);
+
+          try {
+            const regex = new RegExp(fullPattern);
+            isCorrect = regex.test(trimmedUserAnswer);
+            console.log(`Regex test result: ${isCorrect}`);
+          } catch (err) {
+            console.error('Invalid regex pattern:', err);
+            await client.query('ROLLBACK');
+            return NextResponse.json(
+              { error: 'Invalid regex pattern in the answer.' },
+              { status: 500 }
+            );
+          }
+        } else {
+          isCorrect = trimmedUserAnswer.startsWith(mustInclude.trim());
+          console.log(`mustInclude match result: ${isCorrect}`);
+        }
+      } else if (correctAnswer) {
+        try {
+          const regex = new RegExp(`^${correctAnswer}$`);
+          isCorrect = regex.test(trimmedUserAnswer);
+          console.log(`Regex match result (only answer): ${isCorrect}`);
+        } catch (err) {
+          console.error('Invalid regex pattern:', err);
+          await client.query('ROLLBACK');
+          return NextResponse.json(
+            { error: 'Invalid regex pattern in the answer.' },
+            { status: 500 }
+          );
+        }
+      } else {
+        console.log('No valid answer or mustInclude found');
+        await client.query('ROLLBACK');
+        return NextResponse.json(
+          { error: 'No valid answer to check against.' },
+          { status: 500 }
+        );
+      }
+
+      const correctValue = isCorrect ? true : false;
+      console.log(`Answer correctness: ${correctValue}`);
+
+      await client.query(
+        `INSERT INTO submissions (user_name, question_id, correct)
+         VALUES ($1, $2, $3)`,
+        [userName, questionIdInt, correctValue]
       );
 
-      return NextResponse.json({ message: 'Correct answer', completed: true });
-    } else {
-      return NextResponse.json({ message: 'Incorrect answer', completed: false }, { status: 400 });
+      if (correctValue) {
+        await client.query(
+          `INSERT INTO user_challenge_completions (user_name, question_id, completed)
+           VALUES ($1, $2, true)
+           ON CONFLICT (user_name, question_id) DO NOTHING`,
+          [userName, questionIdInt]
+        );
+
+        await client.query(
+          `INSERT INTO leaderboard (user_name, points)
+           VALUES ($1, 30)
+           ON CONFLICT (user_name)
+           DO UPDATE SET points = leaderboard.points + 30`,
+          [userName]
+        );
+      }
+
+      await client.query('COMMIT');
+
+      if (correctValue) {
+        console.log('Answer correct, submission successful');
+        return NextResponse.json({ message: 'Correct answer!' }, { status: 200 });
+      } else {
+        console.log('Answer incorrect');
+        return NextResponse.json({ error: 'Incorrect answer.' }, { status: 400 });
+      }
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('Error during answer submission:', error);
+      return NextResponse.json(
+        { error: 'Failed to process the answer.' },
+        { status: 500 }
+      );
+    } finally {
+      client.release();
     }
   } catch (error) {
-    console.error('Error checking answer:', error);
-    return NextResponse.json({ message: 'Failed to check answer', error }, { status: 500 });
+    console.error('Error in answer API:', error);
+    return NextResponse.json({ error: 'Server error.' }, { status: 500 });
   }
 }

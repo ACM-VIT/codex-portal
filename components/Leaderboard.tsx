@@ -1,78 +1,115 @@
-'use client';
+"use client";
 
-import { Card, CardHeader, CardTitle, CardContent } from './ui/Card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from "react";
+import { Card, CardContent } from "./ui/Card";
+import { LeaderboardEntry } from "../lib/types";
+import DOMPurify from "dompurify";
+import { useSession } from "next-auth/react";
 
-interface LeaderboardEntry {
-  id?: string;
-  user_name: string;
-  points: number;
+const Loader = () => (
+  <div className="flex items-center justify-center h-48">
+    <div className="w-12 h-12 border-4 border-green-500 border-dashed rounded-full animate-spin"></div>
+  </div>
+);
+
+interface LeaderboardProps {
+  currentUserName: string;
 }
 
-// Helper function to get first name
-const getFirstName = (fullName: string) => {
-  return fullName.split(' ')[0]; // Splits by space and takes the first element
-};
-
-export default function Leaderboard() {
+export default function Leaderboard({ currentUserName }: LeaderboardProps) {
+  const { data: session } = useSession();
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const eventSourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    const eventSource = new EventSource('/api/sse-leaderboard');
-    
-    eventSource.onmessage = (e) => {
-      const data = JSON.parse(e.data);
-      // Check if the data is an array before setting the leaderboard
-      if (Array.isArray(data)) {
+    const connectSSE = () => {
+      const eventSource = new EventSource("/api/sse-leaderboard");
+      eventSourceRef.current = eventSource;
+
+      eventSource.onmessage = (event) => {
+        console.log("Received data:", event.data); // Debug log
+        const data = JSON.parse(event.data);
         setLeaderboard(data);
-      }
+        setLoading(false); 
+      };
+
+      eventSource.onerror = (error) => {
+        console.error("Error with SSE connection:", error);
+        eventSource.close();
+
+        setTimeout(() => {
+          connectSSE();
+        }, 5000);
+      };
     };
-  
-    eventSource.onerror = () => {
-      eventSource.close();
-    };
-  
+
+    connectSSE();
+
     return () => {
-      eventSource.close();
+      eventSourceRef.current?.close();
     };
-  }, []);  
+  }, []);
+
+  const userEntry = leaderboard.find(
+    (entry) => entry.user_name === session?.user?.name
+  );
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
-    <Card className="bg-black border-green-500 flex-grow backdrop-blur-sm bg-opacity-30">
-      <CardHeader>
-        <CardTitle className="text-green-500 text-2xl font-mono glitch" data-text="Leaderboard">
-          Leaderboard
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="overflow-y-auto max-h-[350px]">
-          <Table className="min-w-full divide-y divide-green-500 border-collapse bg-black">
-            <TableHeader className="bg-black">
-              <TableRow>
-                <TableHead className="text-green-500 text-xl font-mono border border-green-500 bg-black">Rank</TableHead>
-                <TableHead className="text-green-500 text-xl font-mono border border-green-500 bg-black">Name</TableHead>
-                <TableHead className="text-green-500 text-xl font-mono border border-green-500 bg-black">Score</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody className="bg-black">
-              {leaderboard.map((player, index) => (
-                <TableRow key={player.id || index} className="bg-black hover:bg-green-900">
-                  <TableCell className="font-mono text-green-500 text-lg border border-green-500 bg-black">
-                    {index + 1}
-                  </TableCell>
-                  <TableCell className="font-mono text-green-500 text-lg border border-green-500 bg-black">
-                    {getFirstName(player.user_name)} {/* Display only the first name */}
-                  </TableCell>
-                  <TableCell className="font-mono text-green-500 text-lg border border-green-500 bg-black">
-                    {player.points}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+    <div className="flex flex-col h-full">
+      <h3 className="text-xl font-semibold text-green-500 mb-4">Leaderboard</h3>
+      
+      {/* Scrollable list of all leaderboard entries */}
+      <div className="flex-1 overflow-y-auto space-y-2 no-scrollbar">
+        {leaderboard.map((player, index) => (
+          <Card
+            key={`${player.user_name}-${player.points}-${index}`}
+            className={`bg-gray-900 text-green-500 border-none ${
+              player.user_name === currentUserName ? "bg-green-800" : ""
+            }`}
+          >
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-lg font-medium">
+                  {DOMPurify.sanitize(player.user_name)}
+                  {player.user_name === currentUserName ? " (You)" : ""}
+                </h4>
+                <span className="text-sm">Rank: {index + 1}</span>
+              </div>
+              <p className="mt-2 text-sm text-gray-300">
+                Score: {player.points}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {userEntry && (
+        <div className="mt-2">
+          <Card className="bg-gray-900 text-green-500 border-none">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <h4 className="text-lg font-medium">
+                  {DOMPurify.sanitize(userEntry.user_name)} (You)
+                </h4>
+                <span className="text-sm">
+                  Rank:{" "}
+                  {leaderboard.findIndex(
+                    (entry) => entry.user_name === userEntry.user_name
+                  ) + 1}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-gray-300">
+                Score: {userEntry.points}
+              </p>
+            </CardContent>
+          </Card>
         </div>
-      </CardContent>
-    </Card>
+      )}
+    </div>
   );
 }

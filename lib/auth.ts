@@ -19,7 +19,7 @@ export const authOptions: NextAuthOptions = {
   ],
   pages: {
     signIn: '/auth/signin',
-    error: '/auth/error', // Add this line to specify a custom error page
+    error: '/auth/error', 
   },
   callbacks: {
     async signIn({ user, account }) {
@@ -28,13 +28,11 @@ export const authOptions: NextAuthOptions = {
         try {
           const client = await pool.connect();
 
-          // Check if the user exists in the leaderboard
           const checkUser = await client.query(
             'SELECT user_name FROM leaderboard WHERE user_name = $1',
             [user.name]
           );
 
-          // If the user does not exist, insert them with 0 points
           if (checkUser.rowCount === 0) {
             await client.query(
               'INSERT INTO leaderboard (user_name, points) VALUES ($1, 0)',
@@ -44,26 +42,23 @@ export const authOptions: NextAuthOptions = {
 
           client.release();
           console.log('User authenticated successfully:', user.email);
-          return true; // Continue with sign-in
+          return true; 
         } catch (error) {
           console.error('Error during signIn callback:', error);
-          return false; // Reject sign-in if something goes wrong
+          return false; 
         }
       } else {
         console.log('Access denied for:', user.email);
-        return false; // Reject sign-in if not @vitstudent.ac.in domain
+        return false;
       }
     },
     async redirect({ url, baseUrl }) {
       console.log('Redirect callback - URL:', url, 'Base URL:', baseUrl);
-      // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`;
-      // Allows callback URLs on the same origin
       else if (new URL(url).origin === baseUrl) return url;
       return baseUrl;
     },
     async session({ session, token }) {
-      // Add custom properties to session if needed
       return session;
     },
   },
